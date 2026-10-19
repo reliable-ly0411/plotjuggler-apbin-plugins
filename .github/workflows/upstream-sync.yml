@@ -1,0 +1,40 @@
+name: Sync ArduPilot upstream main
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/upstream-sync.yml
+      - scripts/sync_upstream.py
+      - tests/test_sync_upstream.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apbin-upstream-main-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'reliable-ly0411/plotjuggler-apbin-plugins'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Regression tests
+        run: python3 tests/test_sync_upstream.py -v
+      - name: Merge upstream without rewriting history
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 scripts/sync_upstream.py --push

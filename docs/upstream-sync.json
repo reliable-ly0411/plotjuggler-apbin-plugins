@@ -1,0 +1,6 @@
+{
+  "upstream_repository": "https://github.com/ArduPilot/plotjuggler-apbin-plugins",
+  "upstream_branch": "main",
+  "last_upstream_commit": "3e2f9253adc2d41e17b2f0fec74f4b2487c42fb0",
+  "adaptation_branch": "plotjuggler-4.x-sdk"
+}

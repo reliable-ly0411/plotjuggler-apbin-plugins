@@ -104,6 +104,12 @@ class SyncTest(unittest.TestCase):
             self.run_sync(push=True)
         self.assertEqual(self.old_head, git(self.fork, "rev-parse", "HEAD"))
 
+    def test_checkout_https_origin_without_git_suffix_is_accepted(self):
+        git(self.fork, "remote", "set-url", "origin", sync.FORK_URL.removesuffix(".git"))
+        # The no-op path verifies the destination and fetches the local test
+        # upstream, then returns before any push. No external repository call.
+        self.assertIn("Already synchronized", self.run_sync(push=True))
+
     def test_normal_push_does_not_touch_sdk_branch(self):
         remote = self.root / "remote.git"
         subprocess.run(["git", "clone", "--bare", str(self.fork), str(remote)], check=True, capture_output=True)

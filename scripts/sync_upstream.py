@@ -44,6 +44,7 @@ def synchronize(repo, upstream_url=UPSTREAM, push=False, expected_origin=FORK_UR
         origin = git(repo, "remote", "get-url", "origin").stdout.strip()
         acceptable = {expected_origin}
         if expected_origin == FORK_URL:
+            acceptable.add(FORK_URL.removesuffix(".git"))
             acceptable.add("git@github.com:reliable-ly0411/plotjuggler-apbin-plugins.git")
         if origin not in acceptable:
             raise RuntimeError("origin is not the intended user fork; refusing to push")

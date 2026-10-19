@@ -23,6 +23,8 @@ jobs:
     if: github.repository == 'reliable-ly0411/plotjuggler-apbin-plugins'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v6
         with:

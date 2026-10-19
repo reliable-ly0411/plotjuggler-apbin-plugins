@@ -5,6 +5,10 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import sys
+
+# Importing the local script must not dirty the checkout before its clean-tree guard.
+sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("sync_upstream", ROOT / "scripts/sync_upstream.py")

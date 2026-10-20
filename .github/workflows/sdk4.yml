@@ -3,10 +3,10 @@ name: SDK4 DataFlash plugin
 on:
   push:
     branches: [plotjuggler-4.x-sdk]
-    paths: ['sdk4/**', 'DataLoadAPBin/LogMessageDescriptions/**', '.github/workflows/sdk4.yml']
+    paths: ['sdk4/**', 'DataLoadAPBin/LogMessageDescriptions/**', '.github/workflows/sdk4.yml', 'scripts/package_sdk4.py', 'VERSION', 'release.json']
   pull_request:
     branches: [plotjuggler-4.x-sdk]
-    paths: ['sdk4/**', 'DataLoadAPBin/LogMessageDescriptions/**', '.github/workflows/sdk4.yml']
+    paths: ['sdk4/**', 'DataLoadAPBin/LogMessageDescriptions/**', '.github/workflows/sdk4.yml', 'scripts/package_sdk4.py', 'VERSION', 'release.json']
   workflow_dispatch:
 
 permissions:
@@ -73,3 +73,29 @@ jobs:
             -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
           cmake --build build/sanitized --parallel 2
           ctest --test-dir build/sanitized --output-on-failure
+      - name: Package the tested shared library
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            platform=windows
+          else
+            platform=linux-ubuntu22.04
+          fi
+          python scripts/package_sdk4.py --build build/sdk4 --platform "$platform"
+      - name: Validate the actual final archive through the SDK host ABI
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            test=build/sdk4/ardupilot_source_test.exe
+            plugin=package-verify/ardupilot_source_plugin.dll
+          else
+            test=build/sdk4/ardupilot_source_test
+            plugin=package-verify/libardupilot_source_plugin.so
+          fi
+          "$test" "$plugin" sdk4/tests tests/logs/00000001.BIN
+      - name: Upload verified final package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ArduPilotDataFlash-SDK4-${{ matrix.os }}
+          path: dist/*.zip
+          if-no-files-found: error

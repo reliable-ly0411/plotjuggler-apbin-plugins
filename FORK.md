@@ -4,12 +4,13 @@ This is a fork of [ArduPilot/plotjuggler-apbin-plugins](https://github.com/ArduP
 The original LGPL-3.0 licensing and Git history are preserved.
 
 - `main` follows the original upstream main branch. Product source is kept
-  identical to the recorded upstream commit. Five documented maintenance files
-  provide this policy, the synchronization workflow/script/test, and its baseline
-  record. Consequently, `main` is not an exact-SHA mirror.
+  identical to the recorded upstream commit. Explicit maintenance paths listed in `scripts/sync_upstream.py`
+  provide this policy, release metadata/promotion, repository guidance, and
+  synchronization workflow/script/tests and its baseline record. Consequently, `main` is not an exact-SHA mirror.
 - `plotjuggler-4.x-sdk` carries the independent SDK4 port under `sdk4/`. Its
   ancestry starts at the real upstream main commit, retaining the original
-  Qt5 plugin sources for comparison. It is not a published plugin release.
+  Qt5 plugin sources for comparison. Its native shared-plugin prereleases use their own major-version family
+  and do not replace main-line stable releases. See [RELEASING.md](RELEASING.md).
 - Incorporate future main changes into the SDK4 branch through reviewed,
   non-squashed merge commits/PRs and rerun the parser/SDK regression suites.
   The automatic job never updates the adaptation branch.

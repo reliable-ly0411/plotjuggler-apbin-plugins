@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+import importlib.util
+import json
+from pathlib import Path
+import shutil
+import sys
+import tempfile
+import unittest
+import zipfile
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location('release', ROOT / 'scripts/release.py')
+release = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(release)
+
+
+class ReleaseTest(unittest.TestCase):
+    def test_checked_in_metadata(self):
+        release.validate_config(ROOT)
+
+    def test_semver_rejects_leading_zero_and_unordered_suffix(self):
+        for good in ['1.2.0', '2.0.0-rc.1']:
+            self.assertIsNotNone(release.SEMVER.fullmatch(good))
+        for bad in ['01.2.0', '2.0.0-rc.01', '2.0', '2.0.0-rc1', 'v1.2.0']:
+            self.assertIsNone(release.SEMVER.fullmatch(bad))
+
+    def test_main_exact_six_variants_and_hashes(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = root / 'downloads'
+            for platform, ext in [('ubuntu-22.04', 'so'), ('windows-2022', 'dll')]:
+                for variant in ['plain', 'units', 'units-rcou']:
+                    folder = source / f'DataAPBin-{platform}-{variant}' / 'bin'
+                    folder.mkdir(parents=True)
+                    (folder / f'DataAPBin.{ext}').write_bytes(f'{platform}/{variant}'.encode())
+            config = {'line': 'main'}
+            assets = root / 'assets'
+            hashes = release.collect(config, source, assets)
+            self.assertEqual(7, len(hashes))
+            self.assertEqual(8, len(list(assets.iterdir())))
+            self.assertEqual(b'windows-2022/units-rcou', (assets / 'DataAPBin_with_units_rcou.dll').read_bytes())
+            self.assertEqual(b'ubuntu-22.04/plain', (assets / 'libDataAPBin_no_units.so').read_bytes())
+            self.assertEqual(7, len((assets / 'SHA256SUMS').read_text().splitlines()))
+
+    def test_main_missing_variant_refuses(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(ValueError, 'exactly one'):
+                release.collect({'line': 'main'}, Path(d) / 'none', Path(d) / 'assets')
+
+    def test_sdk_packages_are_promoted_without_repacking(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = root / 'downloads'
+            source.mkdir()
+            config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
+            for name in release.expected_assets(config):
+                with zipfile.ZipFile(source / name, 'w') as archive:
+                    archive.writestr('ardupilot_source_plugin.pjmanifest.json', json.dumps({'version': '2.0.0-rc.1'}))
+                    archive.writestr('libardupilot_source_plugin.so', b'unchanged tested binary')
+            hashes = release.collect(config, source, root / 'assets')
+            self.assertEqual(2, len(hashes))
+            for name, digest in hashes.items():
+                self.assertEqual(digest, release.digest(source / name))
+
+    def test_sdk_manifest_version_mismatch_refuses(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = root / 'downloads'
+            source.mkdir()
+            config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
+            for name in release.expected_assets(config):
+                with zipfile.ZipFile(source / name, 'w') as archive:
+                    archive.writestr('plugin.pjmanifest.json', json.dumps({'version': '1.0.0-dev.1'}))
+            with self.assertRaisesRegex(ValueError, 'manifest'):
+                release.collect(config, source, root / 'assets')
+
+    def test_metadata_detects_version_disagreement(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            shutil.copy(ROOT / 'release.json', root / 'release.json')
+            (root / 'VERSION').write_text('99.0.0\n')
+            with self.assertRaisesRegex(ValueError, 'same valid release version'):
+                release.validate_config(root)
+
+
+if __name__ == '__main__':
+    unittest.main()

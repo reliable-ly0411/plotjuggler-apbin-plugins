@@ -1,0 +1,9 @@
+{
+  "version": "1.2.0",
+  "line": "main",
+  "branch": "main",
+  "workflow": ".github/workflows/build.yml",
+  "prerelease": false,
+  "title": "ArduPilot BIN v1.2.0 \u2014 PlotJuggler 3",
+  "notes": "docs/releases/v1.2.0.md"
+}

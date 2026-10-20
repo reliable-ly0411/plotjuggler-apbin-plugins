@@ -1,0 +1,49 @@
+name: Publish verified plugin release
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run:
+        description: Successful push build run ID from the exact release source
+        required: true
+        type: string
+      source_sha:
+        description: Full 40-character main or SDK4 release source commit
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-verified-apbin-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'reliable-ly0411/plotjuggler-apbin-plugins'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate release metadata and promotion regressions
+        run: python3 tests/test_release.py -v
+      - name: Promote tested artifacts and verify unauthenticated public downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: python3 scripts/release.py --candidate-run "$CANDIDATE_RUN" --source-sha "$SOURCE_SHA"
+      - name: Store technical verification evidence outside release downloads
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: public-download-verification
+          path: public-download-verification.json
+          if-no-files-found: warn

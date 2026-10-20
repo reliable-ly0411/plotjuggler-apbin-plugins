@@ -68,6 +68,20 @@ class SyncTest(unittest.TestCase):
         self.run_sync()
         self.assertEqual(head, git(self.fork, "rev-parse", "HEAD"))
 
+    def test_release_maintenance_paths_keep_product_guard(self):
+        for path in sorted(sync.MANAGED - {sync.RECORD}):
+            commit(self.fork, path, "fork maintenance only\n")
+        self.assertIn("Already synchronized", self.run_sync())
+        self.assertEqual("original\n", (self.fork / "product.cpp").read_text())
+        commit(self.fork, "unexpected-product.txt", "not maintenance\n")
+        with self.assertRaisesRegex(RuntimeError, "product changes"):
+            self.run_sync()
+
+    def test_new_release_policy_collision_stops(self):
+        commit(self.upstream, "RELEASING.md", "upstream policy\n")
+        with self.assertRaisesRegex(RuntimeError, "maintenance paths"):
+            self.run_sync()
+
     def test_product_divergence_stops_without_changes(self):
         head = commit(self.fork, "product.cpp", "fork product change\n")
         with self.assertRaisesRegex(RuntimeError, "product changes"):

@@ -11,7 +11,12 @@ UPSTREAM = "https://github.com/ArduPilot/plotjuggler-apbin-plugins.git"
 FORK_URL = "https://github.com/reliable-ly0411/plotjuggler-apbin-plugins.git"
 RECORD = "docs/upstream-sync.json"
 MANAGED = frozenset({RECORD, "FORK.md", "scripts/sync_upstream.py",
-                     "tests/test_sync_upstream.py", ".github/workflows/upstream-sync.yml"})
+                     "tests/test_sync_upstream.py", ".github/workflows/upstream-sync.yml",
+                     "AGENTS.md", "RELEASING.md", "VERSION", "release.json",
+                     "scripts/release.py", "tests/test_release.py",
+                     ".github/workflows/release.yml", ".github/workflows/release-checks.yml",
+                     "docs/releases/README-licenses.txt", "docs/releases/upstream-v1.1.0.md", "docs/releases/v1.2.0.md",
+                     "docs/releases/v2.0.0-rc.1.md"})
 
 
 def git(repo, *args, check=True):

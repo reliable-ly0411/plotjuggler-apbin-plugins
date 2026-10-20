@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  project(ardupilot_dataflash_sdk4 VERSION 2.0.0 LANGUAGES CXX)
+  project(ardupilot_dataflash_sdk4 VERSION 1.2.0 LANGUAGES CXX)
   enable_testing()
   set(_apbin_plugin_default OFF)
 else()

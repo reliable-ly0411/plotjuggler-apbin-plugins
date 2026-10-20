@@ -15,7 +15,7 @@ import urllib.request
 import zipfile
 
 REPO = "reliable-ly0411/plotjuggler-apbin-plugins"
-SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-rc\.(?:0|[1-9][0-9]*))?")
+SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-(?:pj4\.)?rc\.(?:0|[1-9][0-9]*))?")
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -42,7 +42,7 @@ def validate_config(root):
         if config["workflow"] != ".github/workflows/build.yml":
             raise ValueError("main must use the upstream build workflow")
     elif config["line"] == "sdk4":
-        if config["branch"] != "plotjuggler-4.x-sdk" or not config["prerelease"] or "-rc." not in version:
+        if config["branch"] != "plotjuggler-4.x-sdk" or not config["prerelease"] or "-pj4.rc." not in version:
             raise ValueError("SDK4 must remain a release candidate on its independent branch")
         manifest = json.loads((root / "sdk4/manifest.json").read_text())
         if manifest.get("license") != "LGPL-3.0-only":

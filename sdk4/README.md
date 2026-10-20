@@ -4,10 +4,10 @@ This branch adds a native, separately loaded DataFlash plugin using
 `plotjuggler_sdk` **0.34.1** and C++20. It does not require Qt and does not link
 the PlotJuggler 3 Qt5 loader interface. The original `main` branch tracks the
 upstream 3.x plugin; the SDK port is maintained on `plotjuggler-4.x-sdk`.
-The adapter manifest identifies this prerelease as `2.0.0-rc.1`. This major
-version marks the incompatible PJ3-to-PJ4 plugin ABI transition; no stable SDK
-compatibility certification is implied. Download packages and checksums from
-[the tagged prerelease](https://github.com/reliable-ly0411/plotjuggler-apbin-plugins/releases/tag/v2.0.0-rc.1).
+The adapter manifest identifies this prerelease as `1.2.0-pj4.rc.1`. The base is the downstream 1.2.0 release family; `pj4.rc.1` identifies this
+separate adapter candidate. PJ3 and PJ4 plugin ABIs remain incompatible; no
+stable SDK compatibility certification is implied. Download packages and checksums from
+[the tagged prerelease](https://github.com/reliable-ly0411/plotjuggler-apbin-plugins/releases/tag/v1.2.0-pj4.rc.1).
 Keep the shared library and `.pjmanifest.json` together, and retain the included
 license files and `SOURCE.json` attribution.
 

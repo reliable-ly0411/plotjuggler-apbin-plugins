@@ -20,9 +20,9 @@ class ReleaseTest(unittest.TestCase):
         release.validate_config(ROOT)
 
     def test_semver_rejects_leading_zero_and_unordered_suffix(self):
-        for good in ['1.2.0', '2.0.0-rc.1']:
+        for good in ['1.2.0', '1.2.0-pj4.rc.1']:
             self.assertIsNotNone(release.SEMVER.fullmatch(good))
-        for bad in ['01.2.0', '2.0.0-rc.01', '2.0', '2.0.0-rc1', 'v1.2.0']:
+        for bad in ['01.2.0', '2.0.0-rc.01', '2.0', '2.0.0-rc1', 'v1.2.0', '1.2.0-pj4.rc.01', '1.2.0-pj4.rc1']:
             self.assertIsNone(release.SEMVER.fullmatch(bad))
 
     def test_main_exact_six_variants_and_hashes(self):
@@ -53,10 +53,10 @@ class ReleaseTest(unittest.TestCase):
             root = Path(d)
             source = root / 'downloads'
             source.mkdir()
-            config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
+            config = {'line': 'sdk4', 'version': '1.2.0-pj4.rc.1'}
             for name in release.expected_assets(config):
                 with zipfile.ZipFile(source / name, 'w') as archive:
-                    archive.writestr('ardupilot_source_plugin.pjmanifest.json', json.dumps({'version': '2.0.0-rc.1', 'license': 'LGPL-3.0-only'}))
+                    archive.writestr('ardupilot_source_plugin.pjmanifest.json', json.dumps({'version': '1.2.0-pj4.rc.1', 'license': 'LGPL-3.0-only'}))
                     archive.writestr('libardupilot_source_plugin.so', b'unchanged tested binary')
             hashes = release.collect(config, source, root / 'assets')
             self.assertEqual(2, len(hashes))
@@ -68,7 +68,7 @@ class ReleaseTest(unittest.TestCase):
             root = Path(d)
             source = root / 'downloads'
             source.mkdir()
-            config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
+            config = {'line': 'sdk4', 'version': '1.2.0-pj4.rc.1'}
             for name in release.expected_assets(config):
                 with zipfile.ZipFile(source / name, 'w') as archive:
                     archive.writestr('plugin.pjmanifest.json', json.dumps({'version': '1.0.0-dev.1', 'license': 'LGPL-3.0-only'}))
@@ -80,11 +80,11 @@ class ReleaseTest(unittest.TestCase):
             root = Path(d)
             source = root / 'downloads'
             source.mkdir()
-            config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
+            config = {'line': 'sdk4', 'version': '1.2.0-pj4.rc.1'}
             for name in release.expected_assets(config):
                 with zipfile.ZipFile(source / name, 'w') as archive:
                     archive.writestr('plugin.pjmanifest.json', json.dumps({
-                        'version': '2.0.0-rc.1', 'license': 'LGPL-3.0-or-later'}))
+                        'version': '1.2.0-pj4.rc.1', 'license': 'LGPL-3.0-or-later'}))
             with self.assertRaisesRegex(ValueError, 'LGPLv3 scope'):
                 release.collect(config, source, root / 'assets')
 

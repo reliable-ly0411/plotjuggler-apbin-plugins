@@ -16,7 +16,7 @@ MANAGED = frozenset({RECORD, "FORK.md", "scripts/sync_upstream.py",
                      "scripts/release.py", "tests/test_release.py",
                      ".github/workflows/release.yml", ".github/workflows/release-checks.yml",
                      "docs/releases/upstream-v1.1.0.md", "docs/releases/v1.2.0.md",
-                     "docs/releases/v2.0.0-rc.1.md"})
+                     "docs/releases/v1.2.0-pj4.rc.1.md"})
 
 
 def git(repo, *args, check=True):

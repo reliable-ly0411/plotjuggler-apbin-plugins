@@ -1,9 +1,9 @@
 {
-  "version": "2.0.0-rc.1",
+  "version": "1.2.0-pj4.rc.1",
   "line": "sdk4",
   "branch": "plotjuggler-4.x-sdk",
   "workflow": ".github/workflows/sdk4.yml",
   "prerelease": true,
-  "title": "ArduPilot BIN v2.0.0-rc.1 \u2014 PlotJuggler 4 SDK",
-  "notes": "docs/releases/v2.0.0-rc.1.md"
+  "title": "ArduPilot BIN v1.2.0-pj4.rc.1 \u2014 PlotJuggler 4 SDK",
+  "notes": "docs/releases/v1.2.0-pj4.rc.1.md"
 }

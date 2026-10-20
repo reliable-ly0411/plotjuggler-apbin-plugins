@@ -1,7 +1,7 @@
 {
   "id": "ardupilot-dataflash",
   "name": "ArduPilot BIN",
-  "version": "2.0.0-rc.1",
+  "version": "1.2.0-pj4.rc.1",
   "description": "ArduPilot DataFlash BIN logs: numeric fields, sensor instances, units, parameters and message timelines.",
   "author": "Pierre Kancir; Jonas Withelm (IAV GmbH); reliable-ly0411 contributors",
   "publisher": "reliable-ly0411",

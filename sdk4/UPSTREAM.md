@@ -46,3 +46,17 @@ for the exact plugin revision. Keep the plugin replaceable and do not restrict
 debugging/reverse engineering of modifications. Static embedding is refused by
 this CMake integration. This file describes the chosen delivery architecture;
 it is not a legal opinion about unrelated distributions.
+
+## SDK implementation dependencies
+
+The separately built SDK/plugin uses `fmt` 12.1.0, `nlohmann_json` 3.12.0 and
+`fast_float` 8.1.0. Their copyright/permission notices are retained in
+`licenses/` (MIT for JSON and fast_float; the original fmt license including
+its optional compiled-object exception). The directory also retains the
+SDK 0.34.1 per-module copyright/license mapping. It is installed and included
+in each binary ZIP; the full Apache-2.0 text remains `LICENSE.APACHE2`.
+
+Sources: <https://github.com/fmtlib/fmt/tree/12.1.0>,
+<https://github.com/nlohmann/json/tree/v3.12.0>,
+<https://github.com/fastfloat/fast_float/tree/v8.1.0>. These versions match the
+pinned SDK's Conan requirements.

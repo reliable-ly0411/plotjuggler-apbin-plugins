@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
     require((handle.capabilities() & PJ_DATA_SOURCE_CAPABILITY_FINITE_IMPORT) != 0, "finite source capability");
     require((handle.capabilities() & PJ_DATA_SOURCE_CAPABILITY_DIRECT_INGEST) != 0, "direct ingest capability");
     require(nlohmann::json::parse(handle.manifest())["id"] == "ardupilot-dataflash", "embedded manifest identity");
-    require(nlohmann::json::parse(handle.manifest())["version"] == "1.0.0-dev.1", "unreleased adapter identity");
+    require(nlohmann::json::parse(handle.manifest())["version"] == "2.0.0-rc.1", "prerelease adapter identity");
     successfulImports(library, argv[2]);
     errorAndStop(library, argv[2]);
     unicodePath(library, argv[2]);

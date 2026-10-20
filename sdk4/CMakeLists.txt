@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  project(ardupilot_dataflash_sdk4 VERSION 1.0.0 LANGUAGES CXX)
+  project(ardupilot_dataflash_sdk4 VERSION 2.0.0 LANGUAGES CXX)
   enable_testing()
   set(_apbin_plugin_default OFF)
 else()
@@ -94,6 +94,8 @@ if(APBIN_BUILD_PLUGIN)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.GPL3
                 ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.APACHE2 ${CMAKE_CURRENT_SOURCE_DIR}/UPSTREAM.md
           DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/ardupilot-dataflash)
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/licenses/
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/ardupilot-dataflash/third-party)
   if(APBIN_BUILD_TESTS)
     add_executable(ardupilot_source_test tests/source_test.cpp)
     target_compile_features(ardupilot_source_test PRIVATE cxx_std_20)

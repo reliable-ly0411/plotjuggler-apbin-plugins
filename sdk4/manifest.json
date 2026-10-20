@@ -1,15 +1,23 @@
 {
   "id": "ardupilot-dataflash",
   "name": "ArduPilot BIN",
-  "version": "1.0.0-dev.1",
+  "version": "2.0.0-rc.1",
   "description": "ArduPilot DataFlash BIN logs: numeric fields, sensor instances, units, parameters and message timelines.",
   "author": "Pierre Kancir; Jonas Withelm (IAV GmbH); reliable-ly0411 contributors",
   "publisher": "reliable-ly0411",
   "repository": "https://github.com/reliable-ly0411/plotjuggler-apbin-plugins",
   "license": "LGPL-3.0-or-later",
   "category": "data_loader",
-  "tags": ["ardupilot", "dataflash", "bin", "flight", "loader"],
-  "file_extensions": [".bin"],
+  "tags": [
+    "ardupilot",
+    "dataflash",
+    "bin",
+    "flight",
+    "loader"
+  ],
+  "file_extensions": [
+    ".bin"
+  ],
   "min_sdk_required": "0.34.1",
   "suggested_sdk_version": "0.34.1"
 }

@@ -1,5 +1,5 @@
 // Copyright Pierre Kancir, Jonas Withelm (IAV GmbH)
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: LGPL-3.0-only
 // Derived from ArduPilot/plotjuggler-apbin-plugins. See UPSTREAM.md.
 #include "ardupilot/DataFlashParser.h"
 

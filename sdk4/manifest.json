@@ -6,7 +6,7 @@
   "author": "Pierre Kancir; Jonas Withelm (IAV GmbH); reliable-ly0411 contributors",
   "publisher": "reliable-ly0411",
   "repository": "https://github.com/reliable-ly0411/plotjuggler-apbin-plugins",
-  "license": "LGPL-3.0-or-later",
+  "license": "LGPL-3.0-only",
   "category": "data_loader",
   "tags": [
     "ardupilot",

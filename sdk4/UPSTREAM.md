@@ -1,6 +1,6 @@
 # ArduPilot DataFlash SDK4 port provenance
 
-This directory is a separately built **LGPL-3.0-or-later** plugin. It is not
+This directory is a separately built **LGPL-3.0-only** plugin. It is not
 linked into PlotJuggler's MPL-2.0 application binary.
 
 - Original repository: <https://github.com/ArduPilot/plotjuggler-apbin-plugins>
@@ -26,6 +26,17 @@ The original parser authors are Pierre Kancir and Jonas Withelm (IAV GmbH).
 The original source also credits Dronekit-La for parsing logic and ArduPilot's
 `AP_Logger/LogStructure.h` for the DataFlash wire layout/type definitions.
 Those credits and the original LGPL license remain applicable to the port.
+
+### License-version evidence
+
+The upstream change to LGPL is commit
+[`ec4524b49f0cb837ebacd348781b5d9657e86ba3`](https://github.com/ArduPilot/plotjuggler-apbin-plugins/commit/ec4524b49f0cb837ebacd348781b5d9657e86ba3).
+It installed the LGPL version 3 text; `package.xml` explicitly says `LGPLv3`.
+No project-specific permission to choose later versions was found at the pinned
+upstream checkpoint. The manifest and derived-file SPDX identifiers therefore
+record `LGPL-3.0-only`. Earlier port metadata incorrectly said `or-later`;
+correcting it is not a new license grant or a relicensing of upstream authors'
+work. The original LGPLv3 and incorporated GPLv3 texts remain unmodified.
 
 The Qt5 plugin and PJ3 C++ ABI are **not** reused. `DataFlashParser` translates
 the original record handling into a Qt-free parsing core; `ArduPilotSource`

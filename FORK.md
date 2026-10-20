@@ -34,3 +34,15 @@ To inspect locally, run `python3 tests/test_sync_upstream.py -v`, then
 `python3 scripts/sync_upstream.py` on a clean main checkout. The latter makes
 local merge/bookkeeping commits only. Add `--push` to publish the verified main
 merge. Review failed runs rather than weakening these checks.
+
+## License metadata provenance
+
+Upstream commit [`ec4524b49f0cb837ebacd348781b5d9657e86ba3`](https://github.com/ArduPilot/plotjuggler-apbin-plugins/commit/ec4524b49f0cb837ebacd348781b5d9657e86ba3)
+replaced the sample-plugin MIT text with GNU LGPL version 3. At the recorded
+upstream checkpoint, `package.xml` explicitly declares `LGPLv3`; the repository
+contains no project-specific grant of an option to use later license versions.
+The conditional language in LGPL section 6 is not itself such a grant.
+Accordingly the plugin is described as LGPLv3, and the SDK port's machine-readable
+metadata uses `LGPL-3.0-only`. This corrects unsupported port metadata; it does not
+relicense upstream work or replace the original license texts and attributions.
+Independent fork-maintenance scripts retain their own declared license.

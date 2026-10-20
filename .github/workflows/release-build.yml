@@ -48,4 +48,4 @@ jobs:
           path: release-evidence.json
           retention-days: 90
       - name: Report publication blocker
-        run: echo 'Native gates passed. Automatic publication is blocked pending a reviewed immutable remote source anchor, next version, and corresponding full upstream notes. No source branch or ABI/version was changed.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Native gates passed. Automatic publication is blocked pending a reviewed immutable remote source anchor, next version, and corresponding full upstream notes. Source assembly did not merge or push the SDK4 branch or change either source line ABI/version.' >> "$GITHUB_STEP_SUMMARY"

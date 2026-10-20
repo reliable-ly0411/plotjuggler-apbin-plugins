@@ -22,6 +22,9 @@ jobs:
         os: [ubuntu-22.04, windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.source_ref || github.sha }}
@@ -40,9 +43,6 @@ jobs:
           repository: PlotJuggler/plotjuggler_sdk
           ref: 4d59e7de81455afe73a77051075e8fb4b9f6b0fd
           path: _sdk
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
       - if: runner.os == 'Linux'

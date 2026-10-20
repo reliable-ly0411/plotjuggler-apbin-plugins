@@ -1,0 +1,51 @@
+name: Validate pinned APBIN source candidate
+on:
+  workflow_call:
+    inputs:
+      source_ref:
+        required: true
+        type: string
+      release_manifest:
+        required: true
+        type: string
+      line:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  main:
+    if: inputs.line == 'main'
+    uses: ./.github/workflows/build.yml
+    with:
+      source_ref: ${{ inputs.source_ref }}
+      release_manifest: ${{ inputs.release_manifest }}
+  sdk4:
+    if: inputs.line == 'sdk4'
+    uses: ./.github/workflows/sdk4.yml
+    with:
+      source_ref: ${{ inputs.source_ref }}
+      release_manifest: ${{ inputs.release_manifest }}
+  evidence:
+    needs: [main, sdk4]
+    if: always() && ((inputs.line == 'main' && needs.main.result == 'success') || (inputs.line == 'sdk4' && needs.sdk4.result == 'success'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_ref }}
+      - name: Record immutable original artifacts and fixed source manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_MANIFEST: ${{ inputs.release_manifest }}
+        run: python3 .github/release_policy/evidence.py record
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-evidence-${{ inputs.line }}
+          path: release-evidence.json
+          retention-days: 90
+      - name: Report publication blocker
+        run: echo 'Native gates passed. Automatic publication is blocked pending a reviewed immutable remote source anchor, next version, and corresponding full upstream notes. Source assembly did not merge or push the SDK4 branch or change either source line ABI/version.' >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,25 @@
+name: Verify release-gated original candidate (publication blocked)
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run:
+        description: Completed release-gated sync run ID for this source line
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify released source and original artifacts without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run }}
+        run: python3 .github/release_policy/evidence.py verify
+      - name: Automatic publication remains unsupported
+        run: |
+          echo 'Verification is not publication. Review remote source anchoring and version/notes mapping before enabling promotion.' >> "$GITHUB_STEP_SUMMARY"
+          exit 1

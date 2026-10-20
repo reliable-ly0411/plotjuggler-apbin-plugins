@@ -1,15 +1,8 @@
 name: Sync ArduPilot upstream main
 
 on:
-  schedule:
-    - cron: '17 4 * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/upstream-sync.yml
-      - scripts/sync_upstream.py
-      - tests/test_sync_upstream.py
+  workflow_call:
 
 permissions:
   contents: write

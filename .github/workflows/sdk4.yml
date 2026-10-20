@@ -1,13 +1,15 @@
 name: SDK4 DataFlash plugin
 
 on:
-  push:
-    branches: [plotjuggler-4.x-sdk]
-    paths: ['sdk4/**', 'DataLoadAPBin/LogMessageDescriptions/**', '.github/workflows/sdk4.yml', 'scripts/package_sdk4.py', 'VERSION', 'release.json']
-  pull_request:
-    branches: [plotjuggler-4.x-sdk]
-    paths: ['sdk4/**', 'DataLoadAPBin/LogMessageDescriptions/**', '.github/workflows/sdk4.yml', 'scripts/package_sdk4.py', 'VERSION', 'release.json']
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_ref:
+        type: string
+        required: true
+      release_manifest:
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -20,15 +22,27 @@ jobs:
         os: [ubuntu-22.04, windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reconstruct released tag plus pinned downstream patch
+        shell: bash
+        env:
+          RELEASE_MANIFEST: ${{ inputs.release_manifest }}
+        run: python3 .github/release_policy/policy.py materialize
+      - name: Require the declared sdk4 source and release metadata
+        shell: bash
+        run: python3 -c "import json; assert json.load(open('release.json'))['line'] == 'sdk4', 'Select the sdk4 maintenance branch for this recipe'"
       - uses: actions/checkout@v4
         with:
           repository: PlotJuggler/plotjuggler_sdk
           ref: 4d59e7de81455afe73a77051075e8fb4b9f6b0fd
           path: _sdk
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
       - if: runner.os == 'Linux'
@@ -93,9 +107,12 @@ jobs:
             plugin=package-verify/libardupilot_source_plugin.so
           fi
           "$test" "$plugin" sdk4/tests tests/logs/00000001.BIN
+      - name: Bind tested final ZIP bytes to exact SDK4 source and run
+        shell: bash
+        run: python3 .github/release_policy/receipt.py dist "${{ matrix.os }}"
       - name: Upload verified final package
         uses: actions/upload-artifact@v7
         with:
           name: ArduPilotDataFlash-SDK4-${{ matrix.os }}
-          path: dist/*.zip
+          path: dist/*
           if-no-files-found: error

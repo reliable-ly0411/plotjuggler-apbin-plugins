@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import sys
 import subprocess
 import tempfile
 import time
@@ -16,7 +17,11 @@ import zipfile
 
 REPO = "reliable-ly0411/plotjuggler-apbin-plugins"
 SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-(?:pj4\.)?rc\.(?:0|[1-9][0-9]*))?")
-ROOT = Path(__file__).resolve().parents[1]
+POLICY_ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get('RELEASE_SOURCE_ROOT', POLICY_ROOT)).resolve()
+sys.path.insert(0, str(POLICY_ROOT / '.github/release_policy'))
+from receipt import validate_run, verify
+from evidence import artifacts as run_artifacts, archive as verified_archive
 
 
 def gh(*args, check=True):
@@ -111,13 +116,7 @@ def publish(run_id, source_sha):
     if checked_out != source_sha:
         raise ValueError("Checkout differs from approved source commit")
     run = api(f"actions/runs/{run_id}")
-    expected = {"head_sha": source_sha, "head_branch": config['branch'], "path": config['workflow'],
-                "status": "completed", "conclusion": "success", "event": "push"}
-    for key, value in expected.items():
-        if run.get(key) != value:
-            raise ValueError(f"Candidate run {key}: expected {value}, got {run.get(key)}")
-    if run['repository']['full_name'] != REPO:
-        raise ValueError("Candidate belongs to another repository")
+    validate_run(run, REPO, source_sha, config['branch'], config['workflow'])
     if api(f"git/ref/heads/{config['branch']}")['object']['sha'] != source_sha:
         raise ValueError("Release branch moved; review the new commit before publishing")
     prior_tags = {r['ref']: r['object']['sha'] for r in api('git/matching-refs/tags/')}
@@ -138,7 +137,18 @@ def publish(run_id, source_sha):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         downloads = tmp / 'downloads'
+        names = ([f'DataAPBin-{platform}-{variant}' for platform in ['ubuntu-22.04', 'windows-2022']
+                  for variant in ['plain', 'units', 'units-rcou']] if config['line'] == 'main' else
+                 ['ArduPilotDataFlash-SDK4-ubuntu-22.04', 'ArduPilotDataFlash-SDK4-windows-2022'])
+        records = [a for a in run_artifacts(REPO, run_id) if a['name'] in names]
+        if len(records) != len(names) or {a['name'] for a in records} != set(names):
+            raise ValueError('Missing or duplicate original artifact')
+        for artifact in records:
+            verified_archive(REPO, artifact)
         gh('run', 'download', run_id, '--repo', REPO, '--dir', downloads)
+        for name in names:
+            target = name.removeprefix('DataAPBin-') if config['line'] == 'main' else name.removeprefix('ArduPilotDataFlash-SDK4-')
+            verify(downloads / name, run, source_sha, target)
         assets = tmp / 'assets'
         hashes = collect(config, downloads, assets)
         notes = (ROOT / config['notes']).read_text().rstrip() + '\n\n## Exact build and verification\n\n'

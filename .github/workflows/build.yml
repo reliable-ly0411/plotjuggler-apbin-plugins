@@ -1,15 +1,23 @@
 name: Build plugin
 
 on:
-  push:
-    branches: [main]
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']
-  pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_ref:
+        type: string
+        required: true
+      release_manifest:
+        type: string
+        required: true
+
+permissions:
+  contents: read
 
 env:
   # Single source of truth: both the clone and the cache key derive from this.
   PJ_TAG: '3.9.2'
+  PJ_SHA: d115b540c4f2664259a594259b9e11595f0263fc
 
 jobs:
   # Build PlotJuggler once per platform and cache the install tree. Hoisted out of
@@ -45,7 +53,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: pj_install
-          key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_TAG }}
+          key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_SHA }}
 
       - name: Install PlotJuggler dependencies
         if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Linux'
@@ -69,7 +77,9 @@ jobs:
       - name: Clone PlotJuggler
         if: steps.cache.outputs.cache-hit != 'true'
         shell: bash
-        run: git clone --depth 1 --branch "$PJ_TAG" https://github.com/facontidavide/PlotJuggler.git plotjuggler
+        run: |
+          git clone --depth 1 --branch "$PJ_TAG" https://github.com/facontidavide/PlotJuggler.git plotjuggler
+          test "$(git -C plotjuggler rev-parse HEAD)" = "$PJ_SHA"
 
       - name: Configure PlotJuggler
         if: steps.cache.outputs.cache-hit != 'true'
@@ -124,8 +134,24 @@ jobs:
             qtbase5-dev libqt5svg5-dev libqt5websockets5-dev libqt5opengl5-dev \
             libqt5x11extras5-dev
 
+      - uses: actions/setup-python@v6
+        if: runner.os == 'Windows'
+        with:
+          python-version: '3.12'
       - name: Checkout plugin
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reconstruct released tag plus pinned downstream patch
+        shell: bash
+        env:
+          RELEASE_MANIFEST: ${{ inputs.release_manifest }}
+        run: python3 .github/release_policy/policy.py materialize
+      - name: Require the declared main source and release metadata
+        shell: bash
+        run: python3 -c "import json; assert json.load(open('release.json'))['line'] == 'main', 'Select the main maintenance branch for this recipe'"
 
       - name: Resolve install prefix
         shell: bash
@@ -137,7 +163,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: pj_install
-          key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_TAG }}
+          key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_SHA }}
           fail-on-cache-miss: true
 
       - name: Install Qt
@@ -200,57 +226,12 @@ jobs:
           echo "Testing $plugin ${expect[*]}"
           "$smoketest" "$plugin" tests/logs/00000001.BIN "${expect[@]}"
 
+      - name: Bind tested native library to exact source and run
+        shell: bash
+        run: python3 .github/release_policy/receipt.py plugin_install "${{ matrix.platform.label }}-${{ matrix.config.name }}"
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v7
         with:
           name: DataAPBin-${{ matrix.platform.label }}-${{ matrix.config.name }}
           path: plugin_install/
           if-no-files-found: error
-
-  release:
-    name: Draft release
-    needs: plugin
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout plugin
-        uses: actions/checkout@v7
-
-      - name: Download all plugin artifacts
-        uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-
-      # Each artifact holds a single shared library under bin/. Flatten them
-      # into uniquely named assets, keeping the real extension so a downloaded
-      # asset is still recognisable as a plugin.
-      - name: Collect release assets
-        run: |
-          set -euo pipefail
-          mkdir -p assets
-          for dir in artifacts/*/; do
-            variant="$(basename "$dir")"
-            variant="${variant#DataAPBin-}"
-            # -print -quit rather than piping to head: under `set -o pipefail` a
-            # closed pipe would make find fail the whole step.
-            lib="$(find "$dir" -type f \( -name '*.so' -o -name '*.dll' -o -name '*.dylib' \) -print -quit)"
-            if [ -z "$lib" ]; then
-              echo "No plugin library found in $dir" >&2
-              exit 1
-            fi
-            case "$lib" in
-              *.dll) cp "$lib" "assets/DataAPBin-$variant.dll" ;;
-              *)     cp "$lib" "assets/libDataAPBin-$variant.${lib##*.}" ;;
-            esac
-          done
-          ls -l assets
-
-      - name: Create draft release
-        uses: softprops/action-gh-release@v3
-        with:
-          draft: true
-          files: assets/*
-          fail_on_unmatched_files: true

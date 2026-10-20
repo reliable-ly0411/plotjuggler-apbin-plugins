@@ -45,6 +45,8 @@ def validate_config(root):
         if config["branch"] != "plotjuggler-4.x-sdk" or not config["prerelease"] or "-rc." not in version:
             raise ValueError("SDK4 must remain a release candidate on its independent branch")
         manifest = json.loads((root / "sdk4/manifest.json").read_text())
+        if manifest.get("license") != "LGPL-3.0-only":
+            raise ValueError("SDK manifest must retain the reviewed upstream LGPLv3 scope")
         if manifest["version"] != version:
             raise ValueError("SDK embedded manifest and release versions differ")
         if manifest["min_sdk_required"] != "0.34.1" or manifest["suggested_sdk_version"] != "0.34.1":
@@ -89,7 +91,10 @@ def collect(config, downloads, assets):
                 manifests = [p for p in archive.namelist() if p.endswith('.pjmanifest.json')]
                 if len(manifests) != 1:
                     raise ValueError("SDK package has no unique manifest sidecar")
-                if json.loads(archive.read(manifests[0]))['version'] != config['version']:
+                manifest = json.loads(archive.read(manifests[0]))
+                if manifest.get('license') != 'LGPL-3.0-only':
+                    raise ValueError('Packaged manifest does not match the reviewed LGPLv3 scope')
+                if manifest['version'] != config['version']:
                     raise ValueError("Packaged manifest does not match release version")
             shutil.copyfile(files[0], assets / name)
     if {p.name for p in assets.iterdir()} != expected_assets(config):

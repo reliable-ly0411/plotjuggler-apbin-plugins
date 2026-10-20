@@ -40,6 +40,9 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn('workflow_dispatch:',events(name))
         for command in ['cmake --build','dotnet build','materialize','--clobber']:
             self.assertNotIn(command,text)
+        self.assertIn('ref: ${{ github.workflow_sha }}',text)
+        self.assertIn('path: policy',text)
+        self.assertIn('path: source',text)
         self.assertIn('candidate_run:',text)
         self.assertIn('source_sha:',text)
         text=workflow('verify-release-candidate.yml')

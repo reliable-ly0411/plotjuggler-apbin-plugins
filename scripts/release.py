@@ -17,8 +17,9 @@ import zipfile
 
 REPO = "reliable-ly0411/plotjuggler-apbin-plugins"
 SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-rc\.(?:0|[1-9][0-9]*))?")
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / '.github/release_policy'))
+POLICY_ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.environ.get('RELEASE_SOURCE_ROOT', POLICY_ROOT)).resolve()
+sys.path.insert(0, str(POLICY_ROOT / '.github/release_policy'))
 from receipt import validate_run, verify
 from evidence import artifacts as run_artifacts, archive as verified_archive
 

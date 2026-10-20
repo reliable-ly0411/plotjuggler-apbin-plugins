@@ -1,0 +1,118 @@
+name: SDK4 DataFlash plugin
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_ref:
+        type: string
+        required: true
+      release_manifest:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reconstruct released tag plus pinned downstream patch
+        shell: bash
+        env:
+          RELEASE_MANIFEST: ${{ inputs.release_manifest }}
+        run: python3 .github/release_policy/policy.py materialize
+      - name: Require the declared sdk4 source and release metadata
+        shell: bash
+        run: python3 -c "import json; assert json.load(open('release.json'))['line'] == 'sdk4', 'Select the sdk4 maintenance branch for this recipe'"
+      - uses: actions/checkout@v4
+        with:
+          repository: PlotJuggler/plotjuggler_sdk
+          ref: 4d59e7de81455afe73a77051075e8fb4b9f6b0fd
+          path: _sdk
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-12
+          echo 'CC=gcc-12' >> "$GITHUB_ENV"
+          echo 'CXX=g++-12' >> "$GITHUB_ENV"
+      - name: Install build tools
+        run: python -m pip install 'conan>=2,<3' cmake ninja
+      - name: Parser without SDK dependencies
+        shell: bash
+        run: |
+          cmake -S sdk4 -B build/parser -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/parser --parallel 2
+          ctest --test-dir build/parser --output-on-failure
+      - name: Resolve pinned SDK source dependencies
+        shell: bash
+        run: |
+          conan profile detect --force
+          conan install _sdk -of build/deps -s build_type=Release -s compiler.cppstd=20 \
+            -c tools.cmake.cmaketoolchain:generator=Ninja -o with_tests=False --build=missing
+      - name: Build SDK4 shared plugin and ABI tests
+        shell: bash
+        run: |
+          # GCC12/MSVC CI keeps upstream SDK warnings fatal. The documented
+          # PJ_WARNINGS_AS_ERRORS=OFF workaround is only for the existing
+          # SDK0.34.1 parser_module_abi.cpp warning in local GCC14 builds.
+          cmake -S sdk4 -B build/sdk4 -G Ninja \
+            -DAPBIN_BUILD_PLUGIN=ON -DAPBIN_BUILD_TESTS=ON \
+            -DAPBIN_SDK_SOURCE_DIR="$PWD/_sdk" \
+            -DCMAKE_TOOLCHAIN_FILE="$PWD/build/deps/conan_toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=Release -DPJ_WARNINGS_AS_ERRORS=ON
+          cmake --build build/sdk4 --target ardupilot_parser_test ardupilot_source_test --parallel 2
+          ctest --test-dir build/sdk4 --output-on-failure
+      - name: Parser ASan and UBSan
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cmake -S sdk4 -B build/sanitized -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
+            -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+          cmake --build build/sanitized --parallel 2
+          ctest --test-dir build/sanitized --output-on-failure
+      - name: Package the tested shared library
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            platform=windows
+          else
+            platform=linux-ubuntu22.04
+          fi
+          python scripts/package_sdk4.py --build build/sdk4 --platform "$platform"
+      - name: Validate the actual final archive through the SDK host ABI
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            test=build/sdk4/ardupilot_source_test.exe
+            plugin=package-verify/ardupilot_source_plugin.dll
+          else
+            test=build/sdk4/ardupilot_source_test
+            plugin=package-verify/libardupilot_source_plugin.so
+          fi
+          "$test" "$plugin" sdk4/tests tests/logs/00000001.BIN
+      - name: Bind tested final ZIP bytes to exact SDK4 source and run
+        shell: bash
+        run: python3 .github/release_policy/receipt.py dist "${{ matrix.os }}"
+      - name: Upload verified final package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ArduPilotDataFlash-SDK4-${{ matrix.os }}
+          path: dist/*
+          if-no-files-found: error

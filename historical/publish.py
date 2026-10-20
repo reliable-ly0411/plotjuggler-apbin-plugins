@@ -89,7 +89,7 @@ def publish(run_id,tooling_sha,tag):
     if os.environ.get('GITHUB_REPOSITORY')!=REPO or tag not in SOURCES or not re.fullmatch('[0-9a-f]{40}',tooling_sha):
         raise ValueError('Invalid repository, tag, or build source')
     run=api(f'actions/runs/{run_id}')
-    for key,value in {'head_sha':tooling_sha,'head_branch':'main-ci/upstream-tag-builds','path':'.github/workflows/upstream-tags.yml','status':'completed','conclusion':'success','event':'push'}.items():
+    for key,value in {'head_sha':tooling_sha,'head_branch':'main','path':'.github/workflows/upstream-tags.yml','status':'completed','conclusion':'success','event':'workflow_dispatch'}.items():
         if run.get(key)!=value: raise ValueError(f'Candidate mismatch: {key}')
     if run['repository']['full_name']!=REPO: raise ValueError('Wrong candidate repository')
     jobs=api(f'actions/runs/{run_id}/jobs?per_page=100')

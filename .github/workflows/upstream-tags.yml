@@ -1,8 +1,6 @@
 name: Build original upstream tags
-'on':
-  push:
-    branches:
-    - main-ci/upstream-tag-builds
+on:
+  workflow_dispatch:
 permissions:
   contents: read
 env:

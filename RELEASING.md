@@ -41,7 +41,7 @@
 
 - 上游：ArduPilot/plotjuggler-apbin-plugins；已核基线为 `3e2f9253adc2d41e17b2f0fec74f4b2487c42fb0`，最新对应发布说明为上游 `v1.1.0`。该提交晚于该标签，没有独立上游 Release。
 - `main` 是产品代码与记录上游一致的维护稳定线，附带明确列入同步守卫的维护/发布文件；它不是 exact-SHA 镜像。正式版本族从本 fork `v1.2.0` 起。主题分支使用 `main-ci/`、`main-fix/`、`main-docs/` 等。
-- `plotjuggler-4.x-sdk` 是独立开发适配线；`v2.0.0-rc.1` 表达从 PJ3 Qt/C++ ABI 到 PJ4 SDK C ABI 的不兼容切换。该预发布不得成为 Latest。主题分支使用 `plotjuggler-4.x-sdk-ci/`、`plotjuggler-4.x-sdk-fix/` 等，避免与长期分支名形成 ref 父子冲突。
+- `plotjuggler-4.x-sdk` 是独立开发适配线；`v1.2.0-pj4.rc.1` 沿用下游 1.2.0 基准，以 `pj4.rc.1` 标识 PJ4 适配预发布；不表示 PJ3 Qt/C++ ABI 与 PJ4 SDK C ABI 兼容。该预发布不得成为 Latest。主题分支使用 `plotjuggler-4.x-sdk-ci/`、`plotjuggler-4.x-sdk-fix/` 等，避免与长期分支名形成 ref 父子冲突。
 - 本仓发布版本以 `VERSION` 和 `release.json` 为准，tag 为 `v` + VERSION。SDK4 的 `sdk4/manifest.json` 和内嵌 manifest 必须相同；CMake project 使用对应数字三元组。
 - 上游 `package.xml` 的 `0.1.0` 是未更新的 ROS 包元数据，上游根 CMake 未定义发布版本；为保持 main 产品树一致，二者保留原样，不作为 fork 的二进制发布版本。该目录不含 main 插件的独立内嵌版本字段。不要把 ROS 包版本冒称本次发布号，也不发布 ROS 安装包。
 - main 附件沿用上游 `DataAPBin_no_units.dll`、`libDataAPBin_no_units.so` 等风格，提供 no_units / with_units / with_units_rcou 三变体×Windows/Linux共6库；系统架构及 PJ3.9.2/Qt5 测试边界写正文。二进制不能推论兼容所有 PJ3。

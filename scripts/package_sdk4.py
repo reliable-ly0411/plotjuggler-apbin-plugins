@@ -39,7 +39,12 @@ def package(build, platform, out, verify_dir):
     validate_built_manifest(manifest, json.loads(files[sidecar].read_text()))
     source_sha = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
     provenance = {'repository': 'https://github.com/reliable-ly0411/plotjuggler-apbin-plugins',
-                  'source_commit': source_sha, 'plugin_version': version, 'platform': platform,
+                  'source_commit': source_sha,
+                  'upstream_repository': 'https://github.com/ArduPilot/plotjuggler-apbin-plugins',
+                  'upstream_commit': '3e2f9253adc2d41e17b2f0fec74f4b2487c42fb0',
+                  'upstream_release_tag': 'v1.1.0',
+                  'upstream_release_commit': '399136d91394fc838e813147438e822d8418233c',
+                  'plugin_version': version, 'platform': platform,
                   'plugin_license': 'LGPL-3.0-only',
                   'architecture': 'x86_64', 'sdk_version': '0.34.1',
                   'sdk_commit': '4d59e7de81455afe73a77051075e8fb4b9f6b0fd',

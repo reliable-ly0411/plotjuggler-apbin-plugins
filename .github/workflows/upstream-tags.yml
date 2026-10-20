@@ -1,0 +1,174 @@
+name: Build original upstream tags
+'on':
+  push:
+    branches:
+    - main-ci/upstream-tag-builds
+permissions:
+  contents: read
+env:
+  PJ_TAG: 3.9.2
+jobs:
+  plotjuggler:
+    name: PlotJuggler (${{ matrix.platform.label }})
+    runs-on: ${{ matrix.platform.os }}
+    container:
+      image: ${{ matrix.platform.container || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+        - os: ubuntu-latest
+          container: ubuntu:22.04
+          label: ubuntu-22.04
+        - os: windows-2022
+          label: windows-2022
+    steps:
+    - name: Resolve install prefix
+      shell: bash
+      run: echo "PJ_INSTALL=${GITHUB_WORKSPACE//\\//}/pj_install" >> "$GITHUB_ENV"
+    - name: Cache PlotJuggler install
+      id: cache
+      uses: actions/cache@v6
+      with:
+        path: pj_install
+        key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_TAG }}
+    - name: Install PlotJuggler dependencies
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Linux'
+      run: "apt-get update\napt-get install -y --no-install-recommends \\\n  build-essential cmake git ca-certificates python3\
+        \ zstd \\\n  qtbase5-dev libqt5svg5-dev libqt5websockets5-dev libqt5opengl5-dev \\\n  libqt5x11extras5-dev libprotoc-dev\
+        \ libzmq3-dev liblz4-dev libzstd-dev\n"
+    - name: Install Qt
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: 5.15.2
+        arch: win64_msvc2019_64
+    - name: Clone PlotJuggler
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: git clone --depth 1 --branch "$PJ_TAG" https://github.com/facontidavide/PlotJuggler.git plotjuggler
+    - name: Configure PlotJuggler
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: "cmake -S plotjuggler -B pj_build \\\n  -DCMAKE_INSTALL_PREFIX=\"$PJ_INSTALL\" \\\n  -DCMAKE_BUILD_TYPE=RelWithDebInfo\
+        \ \\\n  -DCMAKE_POLICY_VERSION_MINIMUM=3.5\n"
+    - name: Build & install PlotJuggler
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: cmake --build pj_build --config RelWithDebInfo --target install --parallel "$(nproc || echo 2)"
+  plugin:
+    name: ${{ matrix.tag }} ${{ matrix.platform.label }} ${{ matrix.variant }}
+    needs: plotjuggler
+    runs-on: ${{ matrix.platform.os }}
+    container:
+      image: ${{ matrix.platform.container || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - tag: v1.0.0
+          source: 30f0afde2082b18fb4fec0e79a5c8282eb14f308
+          platform: &id001
+            os: ubuntu-latest
+            container: ubuntu:22.04
+            label: ubuntu-22.04
+          units: 'OFF'
+          variant: no_units
+        - tag: v1.0.0
+          source: 30f0afde2082b18fb4fec0e79a5c8282eb14f308
+          platform: *id001
+          units: 'ON'
+          variant: with_units
+        - tag: v1.1.0
+          source: 399136d91394fc838e813147438e822d8418233c
+          platform: *id001
+          units: 'OFF'
+          variant: no_units
+        - tag: v1.1.0
+          source: 399136d91394fc838e813147438e822d8418233c
+          platform: *id001
+          units: 'ON'
+          variant: with_units
+        - tag: v1.1.0
+          source: 399136d91394fc838e813147438e822d8418233c
+          platform:
+            os: windows-2022
+            label: windows-2022
+          units: 'OFF'
+          variant: no_units
+    steps:
+    - name: Install build dependencies
+      if: runner.os == 'Linux'
+      run: 'apt-get update
+
+        apt-get install -y --no-install-recommends build-essential cmake git ca-certificates python3 zstd qtbase5-dev libqt5svg5-dev
+        libqt5websockets5-dev libqt5opengl5-dev libqt5x11extras5-dev'
+    - name: Checkout build tooling
+      uses: actions/checkout@v6
+    - name: Checkout exact upstream product
+      uses: actions/checkout@v6
+      with:
+        repository: ArduPilot/plotjuggler-apbin-plugins
+        ref: ${{ matrix.source }}
+        path: original
+    - name: Validate original source identity
+      shell: bash
+      run: 'test "$(git -C original rev-parse HEAD)" = "${{ matrix.source }}"
+
+        test -z "$(git -C original status --porcelain)"
+
+        echo "PJ_INSTALL=${GITHUB_WORKSPACE//\\//}/pj_install" >> "$GITHUB_ENV"'
+    - name: Restore reviewed PlotJuggler host
+      uses: actions/cache/restore@v6
+      with:
+        path: pj_install
+        key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_TAG }}
+        fail-on-cache-miss: true
+    - name: Install Qt
+      if: runner.os == 'Windows'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: 5.15.2
+        arch: win64_msvc2019_64
+    - name: Build original plugin
+      shell: bash
+      run: 'flags=()
+
+        if [ "$RUNNER_OS" = Linux ]; then flags+=(''-DCMAKE_CXX_FLAGS=-include array -include cstring''); fi
+
+        cmake -S original -B historical-build -Dplotjuggler_DIR="$PJ_INSTALL/lib/cmake/plotjuggler" -DCMAKE_BUILD_TYPE=Release
+        -DADD_UNITS=${{ matrix.units }} "${flags[@]}"
+
+        cmake --build historical-build --config Release --parallel "$(nproc || echo 2)"
+
+        cmake --install historical-build --prefix historical-install --config Release
+
+        test -z "$(git -C original status --porcelain)"'
+    - name: Build external validation harness
+      shell: bash
+      run: 'cmake -S tests -B historical-tests -DPJ_INCLUDE_DIR="$PJ_INSTALL/include" -DCMAKE_BUILD_TYPE=Release
+
+        cmake --build historical-tests --config Release --parallel "$(nproc || echo 2)"'
+    - name: Load final library and parse real BIN
+      shell: bash
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: 'if [ -x historical-tests/pj_plugin_smoketest ]; then smoke=historical-tests/pj_plugin_smoketest; else smoke=historical-tests/Release/pj_plugin_smoketest.exe;
+        fi
+
+        lib="$(find historical-install -type f \( -name ''*.so'' -o -name ''*.dll'' \) -print -quit)"
+
+        expect=(--verify)
+
+        if [ ''${{ matrix.units }}'' = ON ]; then expect+=(--expect-units); fi
+
+        "$smoke" "$lib" tests/logs/00000001.BIN "${expect[@]}"'
+    - name: Collect exact binary and provenance
+      shell: bash
+      run: python3 historical/package.py "${{ matrix.tag }}" "${{ matrix.platform.label }}" "${{ matrix.variant }}"
+    - uses: actions/upload-artifact@v7
+      with:
+        name: historical-${{ matrix.tag }}-${{ matrix.platform.label }}-${{ matrix.variant }}
+        path: historical-artifact/
+        if-no-files-found: error
+    timeout-minutes: 35

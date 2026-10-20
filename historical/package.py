@@ -33,6 +33,12 @@ def tooling_source():
         raise ValueError('Invalid GitHub build source')
     return value
 
+def host_source():
+    source = json.loads((Path(os.environ['PJ_INSTALL']) / '.apbin-host-source.json').read_text())
+    if source != {'repository': 'PlotJuggler/PlotJuggler', 'tag': '3.9.2', 'commit': 'd115b540c4f2664259a594259b9e11595f0263fc'}:
+        raise ValueError('Host cache identity mismatch')
+    return source
+
 def main(tag, platform, variant):
     name = asset_name(tag, platform, variant)
     if git('-C', 'original', 'rev-parse', 'HEAD') != SOURCES[tag]:
@@ -52,7 +58,7 @@ def main(tag, platform, variant):
               'upstream_source': SOURCES[tag], 'product_source': SOURCES[tag],
               'build_tooling_source': tooling_source(),
               'source_modifications': [], 'platform': platform, 'variant': variant,
-              'host': 'PlotJuggler 3.9.2', 'qt': '5.15.2' if platform == 'windows-2022' else 'Ubuntu 22.04 Qt5 packages',
+              'host': 'PlotJuggler 3.9.2', 'host_source': host_source(), 'qt': '5.15.2' if platform == 'windows-2022' else 'Ubuntu 22.04 Qt5 packages',
               'build_flags': ['-include array', '-include cstring'] if platform == 'ubuntu-22.04' else [],
               'run_id': os.environ['GITHUB_RUN_ID'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
               'filename': name, 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest(),

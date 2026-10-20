@@ -39,7 +39,8 @@ def collect(tag, downloads, out, run):
         expected={'tag':tag,'upstream_repository':UPSTREAM,'upstream_source':SOURCES[tag],
                   'product_source':SOURCES[tag],'build_tooling_source':run['head_sha'],'source_modifications':[],
                   'platform':platform,'variant':variant,'run_id':str(run['id']),'run_attempt':str(run['run_attempt']),
-                  'filename':asset_name(tag,platform,variant),'host':'PlotJuggler 3.9.2'}
+                  'filename':asset_name(tag,platform,variant),'host':'PlotJuggler 3.9.2',
+                  'host_source':{'repository':'PlotJuggler/PlotJuggler','tag':'3.9.2','commit':'d115b540c4f2664259a594259b9e11595f0263fc'}}
         for k,v in expected.items():
             if rec.get(k)!=v: raise ValueError(f'Provenance mismatch: {k}')
         lib=src/rec['filename']
@@ -92,7 +93,9 @@ def publish(run_id,tooling_sha,tag):
         if run.get(key)!=value: raise ValueError(f'Candidate mismatch: {key}')
     if run['repository']['full_name']!=REPO: raise ValueError('Wrong candidate repository')
     jobs=api(f'actions/runs/{run_id}/jobs?per_page=100')
-    if jobs['total_count']!=7 or any(j['conclusion']!='success' for j in jobs['jobs']): raise ValueError('Incomplete seven-job build matrix')
+    expected_jobs={'PlotJuggler (ubuntu-22.04)', 'PlotJuggler (windows-2022)'} | {f'{t} {plat} {var}' for t in SOURCES for plat,var in matrix(t)}
+    if jobs['total_count']!=7 or len(jobs['jobs'])!=7 or {j['name'] for j in jobs['jobs']}!=expected_jobs or any(j['conclusion']!='success' for j in jobs['jobs']):
+        raise ValueError('Incomplete seven-job build matrix')
     if commit_for_tag(tag,UPSTREAM)!=SOURCES[tag] or commit_for_tag(tag,REPO)!=SOURCES[tag]: raise ValueError('Upstream/fork tags do not match')
     releases=api('releases?per_page=100')
     if any(r['tag_name']==tag for r in releases): raise ValueError('Existing release must not be overwritten')

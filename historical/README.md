@@ -9,7 +9,9 @@ upstream commit in `original/` and refuses a modified product tree.
 | v1.1.0 | 399136d91394fc838e813147438e822d8418233c | Linux no_units / with_units; Windows no_units |
 
 The host is PlotJuggler 3.9.2. Linux builds run in Ubuntu 22.04 x86-64;
-Windows builds use Qt 5.15.2 and MSVC x86-64. Historical source omits some
+Windows builds use Qt 5.15.2 and MSVC x86-64. Host caches are isolated by the
+verified full PlotJuggler source SHA and contain an identity marker checked before
+packaging. Historical source omits some
 standard headers, so Linux explicitly passes `-include array -include cstring`.
 This changes no product-source file and backports no parser feature.
 

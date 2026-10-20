@@ -7,6 +7,7 @@ permissions:
   contents: read
 env:
   PJ_TAG: 3.9.2
+  PJ_SHA: d115b540c4f2664259a594259b9e11595f0263fc
 jobs:
   plotjuggler:
     name: PlotJuggler (${{ matrix.platform.label }})
@@ -31,7 +32,7 @@ jobs:
       uses: actions/cache@v6
       with:
         path: pj_install
-        key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_TAG }}
+        key: ${{ matrix.platform.label }}-historical-pj-${{ env.PJ_SHA }}-v1
     - name: Install PlotJuggler dependencies
       if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Linux'
       run: "apt-get update\napt-get install -y --no-install-recommends \\\n  build-essential cmake git ca-certificates python3\
@@ -46,7 +47,9 @@ jobs:
     - name: Clone PlotJuggler
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
-      run: git clone --depth 1 --branch "$PJ_TAG" https://github.com/facontidavide/PlotJuggler.git plotjuggler
+      run: 'git clone --depth 1 --branch "$PJ_TAG" https://github.com/facontidavide/PlotJuggler.git plotjuggler
+
+        test "$(git -C plotjuggler rev-parse HEAD)" = "$PJ_SHA"'
     - name: Configure PlotJuggler
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
@@ -55,7 +58,11 @@ jobs:
     - name: Build & install PlotJuggler
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
-      run: cmake --build pj_build --config RelWithDebInfo --target install --parallel "$(nproc || echo 2)"
+      run: 'cmake --build pj_build --config RelWithDebInfo --target install --parallel "$(nproc || echo 2)"
+
+        printf ''{"repository":"PlotJuggler/PlotJuggler","tag":"3.9.2","commit":"%s"}\n'' "$PJ_SHA" > "$PJ_INSTALL/.apbin-host-source.json"
+
+        '
   plugin:
     name: ${{ matrix.tag }} ${{ matrix.platform.label }} ${{ matrix.variant }}
     needs: plotjuggler
@@ -125,7 +132,7 @@ jobs:
       uses: actions/cache/restore@v6
       with:
         path: pj_install
-        key: ${{ matrix.platform.label }}-plotjuggler-${{ env.PJ_TAG }}
+        key: ${{ matrix.platform.label }}-historical-pj-${{ env.PJ_SHA }}-v1
         fail-on-cache-miss: true
     - name: Install Qt
       if: runner.os == 'Windows'

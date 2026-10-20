@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: LGPL-3.0-or-later
+# SPDX-License-Identifier: LGPL-3.0-only
 """Compile upstream XML descriptions into a Qt-free, deterministic lookup table."""
 import json
 from pathlib import Path
@@ -22,7 +22,7 @@ def generate(source: Path, target: Path) -> None:
         if description:
             rows.append("  {" + ", ".join(json.dumps(value, ensure_ascii=True)
                                           for value in (message, field, description)) + "},")
-    text = ("// SPDX-License-Identifier: LGPL-3.0-or-later\n"
+    text = ("// SPDX-License-Identifier: LGPL-3.0-only\n"
             "// Generated from upstream DataLoadAPBin/LogMessageDescriptions/*.xml.\n"
             "#pragma once\n#include <array>\n#include <string_view>\n"
             "struct LogDescription { std::string_view message, field, text; };\n"

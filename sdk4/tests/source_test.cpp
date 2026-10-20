@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: LGPL-3.0-only
 // ABI fixture pattern follows plotjuggler_sdk's Apache-2.0 file_source_integration_test.cpp.
 #include <cmath>
 #include <filesystem>
@@ -336,6 +336,7 @@ int main(int argc, char** argv) {
     require((handle.capabilities() & PJ_DATA_SOURCE_CAPABILITY_DIRECT_INGEST) != 0, "direct ingest capability");
     require(nlohmann::json::parse(handle.manifest())["id"] == "ardupilot-dataflash", "embedded manifest identity");
     require(nlohmann::json::parse(handle.manifest())["version"] == "2.0.0-rc.1", "prerelease adapter identity");
+    require(nlohmann::json::parse(handle.manifest())["license"] == "LGPL-3.0-only", "embedded upstream LGPLv3 scope");
     successfulImports(library, argv[2]);
     errorAndStop(library, argv[2]);
     unicodePath(library, argv[2]);

@@ -56,7 +56,7 @@ class ReleaseTest(unittest.TestCase):
             config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
             for name in release.expected_assets(config):
                 with zipfile.ZipFile(source / name, 'w') as archive:
-                    archive.writestr('ardupilot_source_plugin.pjmanifest.json', json.dumps({'version': '2.0.0-rc.1'}))
+                    archive.writestr('ardupilot_source_plugin.pjmanifest.json', json.dumps({'version': '2.0.0-rc.1', 'license': 'LGPL-3.0-only'}))
                     archive.writestr('libardupilot_source_plugin.so', b'unchanged tested binary')
             hashes = release.collect(config, source, root / 'assets')
             self.assertEqual(2, len(hashes))
@@ -71,8 +71,21 @@ class ReleaseTest(unittest.TestCase):
             config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
             for name in release.expected_assets(config):
                 with zipfile.ZipFile(source / name, 'w') as archive:
-                    archive.writestr('plugin.pjmanifest.json', json.dumps({'version': '1.0.0-dev.1'}))
+                    archive.writestr('plugin.pjmanifest.json', json.dumps({'version': '1.0.0-dev.1', 'license': 'LGPL-3.0-only'}))
             with self.assertRaisesRegex(ValueError, 'manifest'):
+                release.collect(config, source, root / 'assets')
+
+    def test_sdk_manifest_unverified_later_version_refuses(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = root / 'downloads'
+            source.mkdir()
+            config = {'line': 'sdk4', 'version': '2.0.0-rc.1'}
+            for name in release.expected_assets(config):
+                with zipfile.ZipFile(source / name, 'w') as archive:
+                    archive.writestr('plugin.pjmanifest.json', json.dumps({
+                        'version': '2.0.0-rc.1', 'license': 'LGPL-3.0-or-later'}))
+            with self.assertRaisesRegex(ValueError, 'LGPLv3 scope'):
                 release.collect(config, source, root / 'assets')
 
     def test_metadata_detects_version_disagreement(self):

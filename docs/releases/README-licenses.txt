@@ -16,7 +16,7 @@ PlotJuggler base source used by these builds (3.9.2):
 https://github.com/PlotJuggler/PlotJuggler/tree/d115b540c4f2664259a594259b9e11595f0263fc
 Build workflow: .github/workflows/build.yml in the plugin source tag.
 
-The plugin is LGPL-3.0-or-later. Original authors include Pierre Kancir and
+The plugin is LGPLv3. Original authors include Pierre Kancir and
 Jonas Withelm (IAV GmbH); source files preserve the complete attribution.
 It remains a separately replaceable shared library. Modifications and debugging
 of such modifications must not be prohibited. PlotJuggler base code is MPL-2.0.

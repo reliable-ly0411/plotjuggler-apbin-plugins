@@ -64,7 +64,7 @@ def expected_assets(config):
     if config["line"] == "main":
         return {f"{'lib' if platform == 'ubuntu-22.04' else ''}DataAPBin_{variant}.{ext}"
                 for platform, ext in [("ubuntu-22.04", "so"), ("windows-2022", "dll")]
-                for variant in ["no_units", "with_units", "with_units_rcou"]}
+                for variant in ["no_units", "with_units", "with_units_rcou"]} | {"README-licenses.txt"}
     return {f"ardupilot_source_plugin-v{config['version']}-sdk0.34.1-{platform}-x86_64.zip"
             for platform in ["linux-ubuntu22.04", "windows"]}
 
@@ -79,6 +79,7 @@ def collect(config, downloads, assets):
                     raise ValueError(f"Expected exactly one {platform}/{key} tested library, found {files}")
                 name = f"{'lib' if ext == 'so' else ''}DataAPBin_{variant}.{ext}"
                 shutil.copyfile(files[0], assets / name)
+        shutil.copyfile(ROOT / "docs/releases/README-licenses.txt", assets / "README-licenses.txt")
     else:
         for name in expected_assets(config):
             files = list(downloads.rglob(name))

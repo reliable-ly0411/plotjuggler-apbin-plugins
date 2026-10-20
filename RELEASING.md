@@ -46,7 +46,7 @@
 - 上游 `package.xml` 的 `0.1.0` 是未更新的 ROS 包元数据，上游根 CMake 未定义发布版本；为保持 main 产品树一致，二者保留原样，不作为 fork 的二进制发布版本。该目录不含 main 插件的独立内嵌版本字段。不要把 ROS 包版本冒称本次发布号，也不发布 ROS 安装包。
 - main 附件沿用上游 `DataAPBin_no_units.dll`、`libDataAPBin_no_units.so` 等风格，提供 no_units / with_units / with_units_rcou 三变体×Windows/Linux共6库；系统架构及 PJ3.9.2/Qt5 测试边界写正文。二进制不能推论兼容所有 PJ3。
 - SDK4 用 `ardupilot_source_plugin-v<version>-sdk0.34.1-<platform>-x86_64.zip`，包内保留原始库名、manifest、许可证和来源信息。平台标识为 `linux-ubuntu22.04` 或 `windows`。开发SDK固定0.34.1、boot ABI 5、data-source protocol 4。
-- 这些插件没有汉化 UI，不添加 `zh-CN` 标记。仅发布成果包/库与 `SHA256SUMS`，不发布测试日志或截图。
+- 这些插件没有汉化 UI，不添加 `zh-CN` 标记。仅发布成果包/库、`SHA256SUMS`，main另附唯一 `README-licenses.txt` 安装/许可简介；不发布测试日志或截图。
 - `docs/releases/upstream-v1.1.0.md` 保留原始说明全文；两条线的正文逐字包含，并补各自安装/验证/兼容性/边界；SDK4 明确无独立上游SDK4发布。
 - `scripts/sync_upstream.py` 的 MANAGED 是明确维护路径白名单。新增维护文件同时扩展它及回归测试；不得扩大为任意目录白名单来掩盖产品修改。
 

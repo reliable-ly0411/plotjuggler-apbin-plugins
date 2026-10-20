@@ -37,11 +37,11 @@ class ReleaseTest(unittest.TestCase):
             config = {'line': 'main'}
             assets = root / 'assets'
             hashes = release.collect(config, source, assets)
-            self.assertEqual(6, len(hashes))
-            self.assertEqual(7, len(list(assets.iterdir())))
+            self.assertEqual(7, len(hashes))
+            self.assertEqual(8, len(list(assets.iterdir())))
             self.assertEqual(b'windows-2022/units-rcou', (assets / 'DataAPBin_with_units_rcou.dll').read_bytes())
             self.assertEqual(b'ubuntu-22.04/plain', (assets / 'libDataAPBin_no_units.so').read_bytes())
-            self.assertEqual(6, len((assets / 'SHA256SUMS').read_text().splitlines()))
+            self.assertEqual(7, len((assets / 'SHA256SUMS').read_text().splitlines()))
 
     def test_main_missing_variant_refuses(self):
         with tempfile.TemporaryDirectory() as d:

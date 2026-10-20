@@ -1,0 +1,48 @@
+name: Publish verified upstream tag rebuild
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run:
+        description: Successful original-tag build run ID
+        required: true
+        type: string
+      tooling_sha:
+        description: Exact 40-character build-tooling commit used by candidate
+        required: true
+        type: string
+      tag:
+        description: Original upstream release tag
+        required: true
+        type: choice
+        options: [v1.0.0, v1.1.0]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-verified-apbin-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'reliable-ly0411/plotjuggler-apbin-plugins'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Test historical promotion guards
+        run: python3 -m unittest discover -s historical -p 'test_*.py' -v
+      - name: Publish previously validated original libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run }}
+          TOOLING_SHA: ${{ inputs.tooling_sha }}
+          TAG: ${{ inputs.tag }}
+        run: python3 historical/publish.py --candidate-run "$CANDIDATE_RUN" --tooling-sha "$TOOLING_SHA" --tag "$TAG"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: historical-public-download-verification
+          path: historical-*-verification.json
+          if-no-files-found: warn

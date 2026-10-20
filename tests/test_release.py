@@ -88,6 +88,19 @@ class ReleaseTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'LGPLv3 scope'):
                 release.collect(config, source, root / 'assets')
 
+    def test_built_sdk_manifest_includes_generated_abi_fields(self):
+        spec = importlib.util.spec_from_file_location('package_sdk4', ROOT / 'scripts/package_sdk4.py')
+        pack = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pack)
+        source = json.loads((ROOT / 'sdk4/manifest.json').read_text())
+        pack.validate_built_manifest(source, dict(source, abi_major=5, family='data_source'))
+        for wrong in [dict(source), dict(source, abi_major=6, family='data_source'),
+                      dict(source, abi_major=5, family='parser'),
+                      dict(source, abi_major=5, family='data_source', license='LGPL-3.0-or-later'),
+                      dict(source, abi_major=5, family='data_source', version='1.0.0-dev.1')]:
+            with self.assertRaisesRegex(ValueError, 'reviewed SDK ABI fields'):
+                pack.validate_built_manifest(source, wrong)
+
     def test_metadata_detects_version_disagreement(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

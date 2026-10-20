@@ -10,6 +10,13 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def validate_built_manifest(source, built):
+    # SDK 0.34.1 adds these reviewed ABI-family fields at configure time.
+    expected = dict(source, abi_major=5, family='data_source')
+    if built != expected:
+        raise ValueError('Built manifest differs from the source plus reviewed SDK ABI fields')
+
+
 def package(build, platform, out, verify_dir):
     version = (ROOT / 'VERSION').read_text().strip()
     manifest = json.loads((ROOT / 'sdk4/manifest.json').read_text())
@@ -29,10 +36,7 @@ def package(build, platform, out, verify_dir):
         files['licenses/third-party/' + notice.name] = notice
     if len([name for name in files if name.startswith('licenses/third-party/')]) != 4:
         raise ValueError('SDK/dependency copyright notices are incomplete')
-    if json.loads(files[sidecar].read_text()) != manifest:
-        raise ValueError('Built manifest differs from the reviewed source manifest')
-    if json.loads(files[sidecar].read_text())['version'] != version:
-        raise ValueError('Built manifest does not match the release')
+    validate_built_manifest(manifest, json.loads(files[sidecar].read_text()))
     source_sha = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
     provenance = {'repository': 'https://github.com/reliable-ly0411/plotjuggler-apbin-plugins',
                   'source_commit': source_sha, 'plugin_version': version, 'platform': platform,

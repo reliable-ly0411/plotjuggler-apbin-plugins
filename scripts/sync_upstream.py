@@ -16,7 +16,10 @@ MANAGED = frozenset({RECORD, "FORK.md", "scripts/sync_upstream.py",
                      "scripts/release.py", "tests/test_release.py",
                      ".github/workflows/release.yml", ".github/workflows/release-checks.yml",
                      "docs/releases/README-licenses.txt", "docs/releases/upstream-v1.1.0.md", "docs/releases/v1.2.0.md",
-                     "docs/releases/v2.0.0-rc.1.md"})
+                     "docs/releases/v2.0.0-rc.1.md",
+                     ".github/workflows/upstream-tags.yml", ".github/workflows/upstream-tags-publish.yml",
+                     "historical/package.py", "historical/publish.py",
+                     "historical/test_package.py", "historical/test_publish.py", "historical/README.md"})
 
 
 def git(repo, *args, check=True):

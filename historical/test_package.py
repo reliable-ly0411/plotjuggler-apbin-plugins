@@ -1,10 +1,16 @@
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('package', Path(__file__).with_name('package.py'))
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 class Tests(unittest.TestCase):
+    def test_tooling_source_uses_exact_event_commit(self):
+        with patch.dict('os.environ', {'GITHUB_SHA': 'a'*40}):
+            self.assertEqual(m.tooling_source(), 'a'*40)
+        with patch.dict('os.environ', {'GITHUB_SHA': 'main'}):
+            with self.assertRaises(ValueError):m.tooling_source()
     def test_original_asset_names(self):
         for variant in ('no_units', 'with_units'):
             self.assertEqual(m.asset_name('v1.0.0', 'ubuntu-22.04', variant), f'libDataAPBin_{variant}_v1.0.0.so')

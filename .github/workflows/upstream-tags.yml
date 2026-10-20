@@ -105,6 +105,9 @@ jobs:
         libqt5websockets5-dev libqt5opengl5-dev libqt5x11extras5-dev'
     - name: Checkout build tooling
       uses: actions/checkout@v6
+    - name: Validate historical tooling guards
+      shell: bash
+      run: python3 -m unittest discover -s historical -p 'test_*.py' -v
     - name: Checkout exact upstream product
       uses: actions/checkout@v6
       with:

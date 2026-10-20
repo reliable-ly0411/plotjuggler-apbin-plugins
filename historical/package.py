@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -26,6 +27,12 @@ def asset_name(tag, platform, variant):
 def git(*args):
     return subprocess.check_output(['git', *args], text=True).strip()
 
+def tooling_source():
+    value = os.environ['GITHUB_SHA']
+    if not re.fullmatch(r'[0-9a-f]{40}', value):
+        raise ValueError('Invalid GitHub build source')
+    return value
+
 def main(tag, platform, variant):
     name = asset_name(tag, platform, variant)
     if git('-C', 'original', 'rev-parse', 'HEAD') != SOURCES[tag]:
@@ -43,7 +50,7 @@ def main(tag, platform, variant):
     shutil.copyfile(files[0], out / name)
     record = {'tag': tag, 'upstream_repository': 'ArduPilot/plotjuggler-apbin-plugins',
               'upstream_source': SOURCES[tag], 'product_source': SOURCES[tag],
-              'build_tooling_source': git('rev-parse', 'HEAD'),
+              'build_tooling_source': tooling_source(),
               'source_modifications': [], 'platform': platform, 'variant': variant,
               'host': 'PlotJuggler 3.9.2', 'qt': '5.15.2' if platform == 'windows-2022' else 'Ubuntu 22.04 Qt5 packages',
               'build_flags': ['-include array', '-include cstring'] if platform == 'ubuntu-22.04' else [],

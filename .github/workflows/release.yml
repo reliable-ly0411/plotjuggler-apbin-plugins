@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       candidate_run:
-        description: Successful push build run ID from the exact release source
+        description: Successful manual build run ID from the exact release source
         required: true
         type: string
       source_sha:

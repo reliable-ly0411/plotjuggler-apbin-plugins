@@ -23,6 +23,10 @@ def package(build, platform, out, verify_dir):
              'licenses/COPYING.GPL3': ROOT / 'sdk4/COPYING.GPL3',
              'licenses/LICENSE.APACHE2': ROOT / 'sdk4/LICENSE.APACHE2',
              'licenses/UPSTREAM.md': ROOT / 'sdk4/UPSTREAM.md'}
+    for notice in sorted((ROOT / 'sdk4/licenses').glob('*.txt')):
+        files['licenses/third-party/' + notice.name] = notice
+    if len([name for name in files if name.startswith('licenses/third-party/')]) != 4:
+        raise ValueError('SDK/dependency copyright notices are incomplete')
     if json.loads(files[sidecar].read_text())['version'] != version:
         raise ValueError('Built manifest does not match the release')
     source_sha = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()

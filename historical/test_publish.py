@@ -44,7 +44,7 @@ class PromotionGuards(unittest.TestCase):
     def setUp(self):
         self.sha='a'*40
         self.responses={
-          'actions/runs/123':{'id':123,'run_attempt':1,'head_sha':self.sha,'head_branch':'main-ci/upstream-tag-builds','path':'.github/workflows/upstream-tags.yml','status':'completed','conclusion':'success','event':'push','repository':{'full_name':publish.REPO}},
+          'actions/runs/123':{'id':123,'run_attempt':1,'head_sha':self.sha,'head_branch':'main','path':'.github/workflows/upstream-tags.yml','status':'completed','conclusion':'success','event':'workflow_dispatch','repository':{'full_name':publish.REPO}},
           'actions/runs/123/jobs?per_page=100':{'total_count':7,'jobs':[{'name':n,'conclusion':'success'} for n in sorted({'PlotJuggler (ubuntu-22.04)','PlotJuggler (windows-2022)'} | {f'{t} {plat} {var}' for t in publish.SOURCES for plat,var in publish.matrix(t)})]},
           'git/ref/tags/v1.0.0':{'object':{'type':'commit','sha':publish.SOURCES['v1.0.0']}},
           'releases?per_page=100':[], 'releases/latest':{'tag_name':'v1.2.0'}}
@@ -55,7 +55,7 @@ class PromotionGuards(unittest.TestCase):
     def test_wrong_build_source(self):
         self.responses['actions/runs/123']['head_sha']='b'*40;self.rejected()
     def test_wrong_branch(self):
-        self.responses['actions/runs/123']['head_branch']='main';self.rejected()
+        self.responses['actions/runs/123']['head_branch']='main-ci/upstream-tag-builds';self.rejected()
     def test_running_candidate(self):
         self.responses['actions/runs/123']['status']='in_progress';self.rejected()
     def test_wrong_repository(self):

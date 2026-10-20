@@ -1,0 +1,134 @@
+name: Sync source and recognize new APBIN releases
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Sync main only, or recognize new formal upstream releases for both lines
+        type: choice
+        options: [sync, check-releases]
+        default: sync
+      retry_release_id:
+        description: Explicit retry of a failed new release (never backfill baseline)
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: release-policy-apbin
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.repository == 'reliable-ly0411/plotjuggler-apbin-plugins' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/upstream-sync.yml
+  detect-main:
+    needs: sync
+    if: github.event_name == 'schedule' || inputs.action == 'check-releases'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      build: ${{ steps.release.outputs.build }}
+      release_id: ${{ steps.release.outputs.release_id }}
+      source_ref: ${{ steps.release.outputs.source_ref }}
+      manifest: ${{ steps.release.outputs.manifest }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Test lightweight release and provenance guards
+        run: python3 -m unittest discover -s .github/release_policy -p 'test_*.py' -v
+      - name: Pin released APBIN source and this line's independent downstream patch
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RETRY_ID: ${{ inputs.retry_release_id }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/release_policy/policy.py prepare --retry-id "$RETRY_ID"
+  build-main:
+    needs: detect-main
+    if: needs.detect-main.outputs.build == 'true'
+    uses: ./.github/workflows/release-build.yml
+    with:
+      line: main
+      source_ref: ${{ needs.detect-main.outputs.source_ref }}
+      release_manifest: ${{ needs.detect-main.outputs.manifest }}
+  finish-main:
+    needs: [detect-main, build-main]
+    if: always() && needs.detect-main.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Record original source/run outcome in this line's independent ledger
+        env:
+          RELEASE_ID: ${{ needs.detect-main.outputs.release_id }}
+          BUILD_RESULT: ${{ needs.build-main.result }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/release_policy/policy.py finish --release-id "$RELEASE_ID" --result "$BUILD_RESULT"
+  detect-sdk4:
+    needs: sync
+    if: github.event_name == 'schedule' || inputs.action == 'check-releases'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      build: ${{ steps.release.outputs.build }}
+      release_id: ${{ steps.release.outputs.release_id }}
+      source_ref: ${{ steps.release.outputs.source_ref }}
+      manifest: ${{ steps.release.outputs.manifest }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: plotjuggler-4.x-sdk
+          fetch-depth: 0
+      - name: Test lightweight release and provenance guards
+        run: python3 -m unittest discover -s .github/release_policy -p 'test_*.py' -v
+      - name: Pin released APBIN source and this line's independent downstream patch
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RETRY_ID: ${{ inputs.retry_release_id }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/release_policy/policy.py prepare --retry-id "$RETRY_ID"
+  build-sdk4:
+    needs: detect-sdk4
+    if: needs.detect-sdk4.outputs.build == 'true'
+    uses: ./.github/workflows/release-build.yml
+    with:
+      line: sdk4
+      source_ref: ${{ needs.detect-sdk4.outputs.source_ref }}
+      release_manifest: ${{ needs.detect-sdk4.outputs.manifest }}
+  finish-sdk4:
+    needs: [detect-sdk4, build-sdk4]
+    if: always() && needs.detect-sdk4.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: plotjuggler-4.x-sdk
+          fetch-depth: 0
+      - name: Record original source/run outcome in this line's independent ledger
+        env:
+          RELEASE_ID: ${{ needs.detect-sdk4.outputs.release_id }}
+          BUILD_RESULT: ${{ needs.build-sdk4.result }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/release_policy/policy.py finish --release-id "$RELEASE_ID" --result "$BUILD_RESULT"

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       candidate_run:
-        description: Successful push build run ID from the exact release source
+        description: Successful manual build run ID from the exact release source
         required: true
         type: string
       source_sha:
@@ -28,22 +28,31 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: ${{ github.workflow_sha }}
+          path: policy
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
           ref: ${{ inputs.source_sha }}
+          path: source
+          persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Validate release metadata and promotion regressions
-        run: python3 tests/test_release.py -v
+        run: python3 policy/tests/test_release.py -v
       - name: Promote tested artifacts and verify unauthenticated public downloads
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_RUN: ${{ inputs.candidate_run }}
           SOURCE_SHA: ${{ inputs.source_sha }}
-        run: python3 scripts/release.py --candidate-run "$CANDIDATE_RUN" --source-sha "$SOURCE_SHA"
+          RELEASE_SOURCE_ROOT: ${{ github.workspace }}/source
+        working-directory: source
+        run: python3 ../policy/scripts/release.py --candidate-run "$CANDIDATE_RUN" --source-sha "$SOURCE_SHA"
       - name: Store technical verification evidence outside release downloads
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: public-download-verification
-          path: public-download-verification.json
+          path: source/public-download-verification.json
           if-no-files-found: warn

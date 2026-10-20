@@ -16,3 +16,4 @@ jobs:
           python-version: '3.12'
       - run: python3 tests/test_release.py -v
       - run: python3 tests/test_sync_upstream.py -v
+      - run: python3 -m unittest discover -s .github/release_policy -p 'test_*.py' -v

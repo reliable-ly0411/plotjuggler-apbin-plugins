@@ -52,10 +52,21 @@
 
 ## 构建与提升
 
-1. 普通 merge 后等该精确提交的 push 构建完成：main 使用上游 `.github/workflows/build.yml`；SDK4 使用 `.github/workflows/sdk4.yml`。
+1. 普通 push/PR 仅运行轻量元数据、同步守卫及策略回归。手动构建 main 使用 `.github/workflows/build.yml`；SDK4 使用 `.github/workflows/sdk4.yml`。新的正式上游 Release 才由独立 gate 调用这些完整原生检查。
 2. main 各变体在 Linux/Windows 原生动态加载及真实BIN解析后上传原始安装库；SDK4 对最终ZIP解包后的库再跑动态ABI测试。
-3. 在 `Publish verified plugin release` 手动工作流填成功 push run ID 及完整 source SHA。工作流拒绝源分支移动、版本/manifest不一致、缺平台或变体、已有tag/Release。
+3. 在 `Publish verified plugin release` 手动工作流填成功手动构建 run ID 及完整 source SHA。工作流拒绝源分支移动、版本/manifest不一致、缺平台或变体、已有tag/Release。
 4. 从已验CI工件提升原字节，不重建、不覆盖；创建新标签/Release，正确设置预发布与Latest。
 5. 公开下载链接无鉴权回读每个附件，核字节数与SHA256。证据保留在CI工件。失败后先核已有tag/Release状态，不盲目重试创建。
 
 本文件是工程约定，不授予发布、合并或权限变更的授权。
+
+## 发布触发门禁
+
+- 每天 04:17 UTC 的 `sync-upstream.yml` 先执行 main 源码同步；原 `upstream-sync.yml` 保留手动 source-only 入口及精确 MANAGED 文件白名单。普通 push/PR、tag push、历史主题分支 push 均不再直接启动重型编译或发布。
+- 只接受 `ArduPilot/plotjuggler-apbin-plugins` 新的正式 `vX.Y.Z` GitHub Release，排除 draft/prerelease 和只有 tag/HEAD 变化。2026-10-20 14:06:15 UTC 已有 v1.0.0/v1.1.0 Release ID 是基线，不回填旧构建。历史源标签复建保留手动 `upstream-tags.yml`，历史发布仍要求完整原始矩阵和不可变标签，不能绕过现有版本。
+- main 与 SDK4 独立固定 released tag 的 peeled SHA、各自下游补丁起点/提交/摘要及最终组合源码 SHA。main ledger 为 `release-policy-state`，SDK4 为 `release-policy-state-sdk4`；两者分别去重，重试固定首次来源。成功不重建，失败最多自动三次；tag 移动、重命名、撤回或同 tag 重用 Release ID 均阻塞。
+- SDK4 仅在构建作业中把正式 APBIN tag 与独立 SDK4 补丁组合，不把 main 合入或推送到 SDK4 长期分支；`scripts/sync_upstream.py` 禁止同步 SDK4 的约束不变。此类组合候选不是独立上游 SDK4 Release，也不是 PJ3 ABI 兼容声明。无法无冲突组合时停止，不自动解决产品冲突。
+- PJ3 宿主仍固定 PlotJuggler 3.9.2 提交 `d115b540c4f2664259a594259b9e11595f0263fc`；SDK4 仍固定 SDK 0.34.1 提交 `4d59e7de81455afe73a77051075e8fb4b9f6b0fd`、boot ABI 5、protocol 4。六变体原生加载/真实 BIN、SDK 动态 ABI、最终 ZIP 解包复验和 sanitizer 门禁全部保留。没有修改 VERSION、release.json 或 SDK manifest。
+- 正式上游候选目前只产生带来源及不可变工件摘要的已验候选，自动发布明确阻塞：需要先审阅组合源码的远端不可变锚点、下一下游版本与完整上游说明映射。现有 1.2.0/1.2.0-pj4.rc.1 不能自动重用或覆盖。`verify-release-candidate.yml` 只核验原始 run/ledger/tag/工件，不重建，最后明确报告发布阻塞。
+- 手动 `release.yml` 仅提升对应长期分支的成功 `workflow_dispatch` 原 run。必须核对 source SHA、workflow、run attempt、全部平台/变体、GitHub 工件 digest 和包内逐文件摘要；拒绝 PR、旧 push、失败、跨仓和缺失工件。源分支移动仍要求重新审阅，不把提醒或候选验收当作发布批准。
+- 部署时先将 SDK4 对应维护变更普通合并，再部署 main 的双线调度，避免调度器找不到 SDK4 policy 文件。两条维护分支均需保留各自产品/版本映射。手动同步默认只同步；`check-releases` 才附加检测。流程不取消运行中的作业，不新增凭据、安全设置或第三方 dispatch。

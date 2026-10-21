@@ -11,6 +11,32 @@ def workflow(name):return (ROOT/'.github/workflows'/name).read_text()
 def events(name):return re.search(r"^'?on'?\s*:[\s\S]*?(?=^[A-Za-z][A-Za-z_-]*:)",workflow(name),re.M).group()
 
 class WorkflowPolicyTests(unittest.TestCase):
+    def test_release_callers_pass_only_required_read_permissions(self):
+        # GitHub validates reusable-workflow permissions before evaluating job if.
+        # Keep Actions access on the callers, not the source-sync workflow default.
+        text = workflow('sync-upstream.yml')
+        default = re.search(r'^permissions:\n((?:  [^\n]+\n)+)', text, re.M)
+        self.assertIsNotNone(default)
+        self.assertEqual(default.group(1), '  contents: read\n')
+        jobs = dict(re.findall(
+            r'^  ([a-zA-Z0-9_-]+):\n(.*?)(?=^  [a-zA-Z0-9_-]+:|\Z)',
+            text.split('\njobs:\n', 1)[1], re.M | re.S))
+        expected = (['build'] if CONFIG['upstream'].startswith('Titan-')
+                    else ['build-main', 'build-sdk4'])
+        callers = {name: body for name, body in jobs.items()
+                   if 'uses: ./.github/workflows/release-build.yml' in body}
+        self.assertEqual(set(callers), set(expected))
+        for name, body in callers.items():
+            with self.subTest(job=name):
+                permissions = re.search(r'^    permissions:\n((?:      [^\n]+\n)+)', body, re.M)
+                self.assertIsNotNone(permissions, 'caller must allow evidence artifact reads')
+                self.assertEqual(permissions.group(1),
+                                 '      contents: read\n      actions: read\n')
+                dependency = 'sync' if name == 'build' else 'detect-' + name.removeprefix('build-')
+                self.assertIn("if: needs." + dependency + ".outputs.build == 'true'", body)
+        evidence = workflow('release-build.yml').split('  evidence:\n', 1)[1]
+        self.assertIn('    permissions:\n      contents: read\n      actions: read\n', evidence)
+
     def test_native_workflows_have_no_automatic_entrypoint(self):
         for name in CONFIG['heavy_workflows']:
             with self.subTest(name=name):

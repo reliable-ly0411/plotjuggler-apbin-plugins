@@ -11,6 +11,37 @@ stable SDK compatibility certification is implied. Download packages and checksu
 Keep the shared library and `.pjmanifest.json` together, and retain the included
 license files and `SOURCE.json` attribution.
 
+## Downloads, compatibility and installation
+
+Choose the `v1.3.0-pj4.rc.1` ZIP for your system:
+
+- `ardupilot_source_plugin-v1.3.0-pj4.rc.1-sdk0.34.1-linux-ubuntu22.04-x86_64.zip`
+- `ardupilot_source_plugin-v1.3.0-pj4.rc.1-sdk0.34.1-windows-x86_64.zip`
+
+The packages require SDK **0.34.1** at commit
+[`4d59e7de81455afe73a77051075e8fb4b9f6b0fd`](https://github.com/PlotJuggler/plotjuggler_sdk/tree/4d59e7de81455afe73a77051075e8fb4b9f6b0fd),
+**boot ABI 5** and **data-source protocol 4**. A compatible native host and
+platform C/C++ runtime must already be installed. macOS, ARM, PJ3,
+static embedding and WebAssembly are not supported by these packages.
+
+1. Verify the ZIP against the prerelease's `SHA256SUMS`, then extract it fully.
+2. Close the host and move older copies out of its plugin search paths. Keep
+   the library and `.pjmanifest.json` together; retain licenses and `SOURCE.json`.
+3. Add the extracted directory to the host's plugin paths, or start with
+   `--plugin-dir <directory>`. Do not install it into a PJ3 plugin directory.
+4. Restart the host, confirm **ArduPilot BIN** is listed, and open a `.BIN` log.
+
+The marketplace entry is **ArduPilot BIN (Contributed)** (`ardupilot-dataflash`).
+Its catalog version may lag the GitHub prerelease; check the version shown
+before installing. The older `v1.2.0-pj4.rc.1` remains unchanged. This preview
+is not Latest and does not replace the independent PJ3 stable `v1.2.0`.
+
+Both platforms test parser fixtures, dynamic SDK loading and the shared library
+unpacked from the final ZIP; Linux also runs parser sanitizers. These checks
+are not a full interactive GUI certification. See the
+[release notes](../docs/releases/v1.3.0-pj4.rc.1.md) for the verification scope,
+leading `TimeMS` changes, known limits and upstream provenance.
+
 ## Parser-only tests
 
 No SDK, Qt, Conan, GTest or network access is needed:
@@ -43,7 +74,8 @@ dynamic ABI regressions still run. When GCC 14 diagnoses the upstream SDK
 disable compiler warnings or change the SDK source.
 
 The shared library is `ardupilot_source_plugin` (`.so` on Linux, `.dll` on
-Windows). Copy it to the plugin directory selected in PlotJuggler 4, or start
+Windows). Keep its `.pjmanifest.json` beside it in the plugin directory selected
+in PlotJuggler 4, or start
 the host with `--plugin-dir <directory>`. `.bin` files are advertised in the
 embedded manifest. A PJ3 binary is not compatible with the PJ4 SDK.
 

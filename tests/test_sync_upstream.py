@@ -81,6 +81,21 @@ class SyncTest(unittest.TestCase):
         self.assertIn("docs/releases/v1.3.0-pj4.rc.1.md", sync.MANAGED)
         self.assertNotIn("docs/releases/unreviewed.md", sync.MANAGED)
 
+    def test_readme_is_an_exact_maintenance_path(self):
+        self.assertIn("README.md", sync.MANAGED)
+        commit(self.fork, "README.md", "fork installation guide\n")
+        self.assertIn("Already synchronized", self.run_sync())
+        head = git(self.fork, "rev-parse", "HEAD")
+        commit(self.upstream, "README.md", "upstream installation update\n")
+        with self.assertRaisesRegex(RuntimeError, "maintenance paths"):
+            self.run_sync()
+        self.assertEqual(head, git(self.fork, "rev-parse", "HEAD"))
+
+    def test_nested_readme_is_not_exempt_from_product_guard(self):
+        commit(self.fork, "DataLoadAPBin/README.md", "unexpected product file\n")
+        with self.assertRaisesRegex(RuntimeError, "product changes"):
+            self.run_sync()
+
     def test_new_release_policy_collision_stops(self):
         commit(self.upstream, "RELEASING.md", "upstream policy\n")
         with self.assertRaisesRegex(RuntimeError, "maintenance paths"):

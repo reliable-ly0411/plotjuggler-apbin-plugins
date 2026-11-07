@@ -13,6 +13,7 @@ integration reference; original upstream differs slightly.
 | FMTU, instance `#` grouping | Main loop, lines 280–326 | Deferred metadata application also handles late FMTU |
 | UNIT/MULT values and units in curve paths | Lines 329–386, `get_unit`, `apply_multipliers` | `parse`, `displayUnit`; multiplier scaling occurs once |
 | TimeUS timestamps | Lines 522–526 | Integer microseconds; `ArduPilotSource` uses SDK checked nanosecond conversion |
+| Legacy leading TimeMS boot clocks | Additional SDK4 support | uint32 milliseconds convert to exact integer microseconds; TimeUS wins when present; GPS-week and ACC/GYR sensor-local clocks are excluded |
 | GPS week/time anchoring | `gps_to_unix_time`, `apply_timesync` | Same first-instance valid-fix policy and 18-second offset; GMS scaled afterward |
 | All numeric wire codes | `handle_message_received`, lines 881–984 | `numericValue`, little-endian and alignment-safe |
 | Skip ISBD/ISBH, arrays and ordinary string fields | Lines 396–409, 659–663 | Same omission in `parse`; explicit in README |
@@ -54,3 +55,17 @@ services, verifies numeric/time values, metadata, failed writes, malformed
 config/input, Stop, Unicode paths and the same complete upstream log. Passing
 these tests does not constitute complete PlotJuggler GUI, broad real-flight
 corpus or Windows runtime validation.
+
+## Additional legacy-clock regression
+
+The SDK4 parser now accepts a leading `TimeMS` uint32 field for ordinary log
+records instead of silently dropping those numeric samples. Synthetic cases
+cover the uint32 maximum without intermediate overflow, mixed TimeUS/TimeMS
+precedence, shared GPS alignment, PARM/MSG timestamps, invalid field types and
+excluded GPS-week / ACC/GYR sensor-local clocks. `timems.BIN` also crosses the
+real plugin C ABI with exact nanosecond assertions. Clock rollover and legacy
+GPS `Week`/`T` epoch reconstruction remain outside this change.
+
+Clock classification reference: [pymavlink DFReader.py at 544d9016](https://github.com/ArduPilot/pymavlink/blob/544d9016f6e19fed105b28fb41e9ade19c45d8c2/DFReader.py),
+`DFReaderClock_usec.type_has_good_TimeMS` and `should_use_msec_field0`. We do not
+copy its last-message-time fallback to manufacture timestamps for skipped data.

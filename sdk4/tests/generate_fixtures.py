@@ -45,3 +45,8 @@ gps += record(142, "QBIHB", 2000000, 0, 345600000, 2000, 8)
 (root / "invalid_fmt.BIN").write_bytes(fmt(140, "TST", "Qf", "TimeUS,Value", length=255))
 (root / "invalid_fmtu.BIN").write_bytes(fmt(129, "FMTU", "QB", "TimeUS,FmtType") +
                                         record(129, "QB", 0, 140))
+
+# A bounded, synthetic legacy-clock log; no captured flight data.
+(root / "timems.BIN").write_bytes(fmt(140, "TST", "If", "TimeMS,Value") +
+                                  record(140, "If", 1234, 2.5) +
+                                  record(140, "If", 4294967295, 3.5))

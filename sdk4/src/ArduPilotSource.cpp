@@ -139,7 +139,7 @@ class ArduPilotSource final : public PJ::FileSourceBase {
     if (result.messages_without_time) {
       runtimeHost().reportMessage(
           PJ::DataSourceMessageLevel::kWarning,
-          "ArduPilot BIN: ignored " + std::to_string(result.messages_without_time) + " records without TimeUS");
+          "ArduPilot BIN: ignored " + std::to_string(result.messages_without_time) + " records without a supported TimeUS/TimeMS clock");
     }
 
     // Group fields by their original topic; aligned fields are written in one row,

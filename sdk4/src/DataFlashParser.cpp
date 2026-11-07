@@ -156,8 +156,29 @@ double numericValue(std::span<const std::uint8_t> bytes, const Field& field) {
   }
 }
 
+/// TimeMS must be the record clock, not a GPS-week or sensor-local time field.
+/// pymavlink DFReaderClock_usec applies the same ACC/GYR clock exclusions.
+const Field* timeField(const Format& format) {
+  if (const auto* microseconds = findField(format, "TimeUS")) {
+    return microseconds;
+  }
+  if (!format.fields.empty() && format.fields.front().name == "TimeMS" &&
+      !format.name.starts_with("ACC") && !format.name.starts_with("GYR")) {
+    return &format.fields.front();
+  }
+  return nullptr;
+}
+
 /// Preserve integer timestamp precision through GPS alignment and SDK conversion.
 std::int64_t timestamp(std::span<const std::uint8_t> bytes, const Format& format) {
+  const auto* clock = timeField(format);
+  if (!clock) {
+    throw ParseError("Missing supported DataFlash timestamp in " + format.name);
+  }
+  if (clock->name == "TimeMS") {
+    const auto& field = requireField(format, "TimeMS", "I");
+    return static_cast<std::int64_t>(read<std::uint32_t>(bytes, field.offset)) * 1000;
+  }
   const auto& field = requireField(format, "TimeUS", "Q");
   const auto value = read<std::uint64_t>(bytes, field.offset);
   if (value > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
@@ -355,7 +376,7 @@ ParseResult parse(std::span<const std::uint8_t> bytes, const Progress& progress)
       } else if (format.name == "MSG") {
         const auto& text = requireField(format, "Message", "nNZ");
         messages.push_back({timestamp(record, format), readString(record, text.offset, fieldSize(text.code))});
-      } else if (findField(format, "TimeUS")) {
+      } else if (timeField(format)) {
         std::vector<double> row;
         row.reserve(format.fields.size());
         for (const auto& field : format.fields) {
@@ -452,7 +473,7 @@ ParseResult parse(std::span<const std::uint8_t> bytes, const Progress& progress)
       const auto time = shiftTime(format.timestamps[row_index], time_offset);
       for (std::size_t field_index = 0; field_index < format.fields.size(); ++field_index) {
         const auto& field = format.fields[field_index];
-        if (!isNumeric(field.code) || field.name == "TimeUS" || field_index == instance_position) {
+        if (!isNumeric(field.code) || &field == timeField(format) || field_index == instance_position) {
           continue;
         }
         double value = row[field_index];

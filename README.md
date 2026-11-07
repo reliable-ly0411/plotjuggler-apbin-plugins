@@ -1,6 +1,53 @@
-# plotjuggler-apbin-plugins
+# ArduPilot DataFlash BIN plugins for PlotJuggler
 
-This repository contains the [ArduPilot Dataflash](https://ardupilot.org/copter/docs/common-logs.html) plugin for [PlotJuggler](https://github.com/facontidavide/PlotJuggler).
+This fork of [ArduPilot/plotjuggler-apbin-plugins](https://github.com/ArduPilot/plotjuggler-apbin-plugins)
+provides a stable PlotJuggler 3 loader and an independent PlotJuggler 4 SDK
+adapter for [ArduPilot DataFlash logs](https://ardupilot.org/copter/docs/common-logs.html).
+Original authorship, Git history and LGPLv3 licensing are preserved. These are
+plugins, not standalone log viewers or Chinese-localized user interfaces.
+
+## Choose the correct plugin
+
+- **PlotJuggler 3: stable `v1.2.0`**, maintained on `main`.
+  [Download and release notes](https://github.com/reliable-ly0411/plotjuggler-apbin-plugins/releases/tag/v1.2.0).
+  Prebuilt Windows and Ubuntu 22.04 x86-64 libraries were tested against
+  **PlotJuggler 3.9.2 / Qt 5**. Compatibility with other PJ3 versions, Qt
+  versions or compiler ABIs is not claimed. Choose exactly one variant:
+  `no_units`, `with_units`, or `with_units_rcou`.
+- **PlotJuggler 4: SDK preview `v1.3.0-pj4.rc.1`**, maintained separately on
+  `plotjuggler-4.x-sdk`.
+  [SDK4 guide](https://github.com/reliable-ly0411/plotjuggler-apbin-plugins/blob/plotjuggler-4.x-sdk/sdk4/README.md)
+  and [prerelease](https://github.com/reliable-ly0411/plotjuggler-apbin-plugins/releases/tag/v1.3.0-pj4.rc.1).
+  Requires the pinned **plotjuggler_sdk 0.34.1, boot ABI 5, data-source protocol 4**;
+  this is not a promise of compatibility with every PlotJuggler 4 build.
+  Windows and Ubuntu 22.04 x86-64 packages include a native shared library and
+  its manifest. This preview adds leading `TimeMS` boot-clock support and does
+  not replace `v1.2.0-pj4.rc.1` assets or the PJ3 stable release / Latest.
+
+**PJ3 and PJ4 binaries are not interchangeable.** Published packages do not
+cover macOS, ARM or ROS packages. The build/install instructions below are
+for the **PJ3 Qt plugin only**; PJ4 users should follow the SDK4 guide instead.
+For exact tested boundaries, known limits and checksums, read the selected
+release's notes. Fork version numbers are not upstream ArduPilot release tags.
+
+The PJ4 marketplace entry is **ArduPilot BIN (Contributed)**, plugin ID
+`ardupilot-dataflash`. Check its advertised version before installing: a new
+GitHub prerelease does not automatically update the marketplace catalog.
+
+## Quick installation
+
+1. Download the package/library for your host and OS, and verify it against
+   that release's `SHA256SUMS`.
+2. Close the host and move an older copy out of its plugin search paths to
+   avoid duplicate loaders. PJ3 users should keep only one variant.
+3. For PJ3, copy the selected DLL/SO into the plugin folder configured under
+   **App → Preferences → Plugins**. For PJ4, extract the ZIP, keep the library
+   and `.pjmanifest.json` together, retain licenses and `SOURCE.json`, and use
+   the host's plugin directory or `--plugin-dir <directory>`.
+4. Restart the compatible host and open an ArduPilot `.BIN` log.
+
+See [fork provenance and maintenance](FORK.md), [release policy](RELEASING.md)
+and [LICENSE](LICENSE). The SDK4 guide includes additional SDK/source licenses.
 
 ## Install PlotJuggler
 
@@ -18,7 +65,7 @@ If you wish to build `plotjuggler-apbin-plugin` follow these steps.
 ### 1. Clone the repository
 
 ```
-git clone https://github.com/ArduPilot/plotjuggler-apbin-plugins
+git clone --branch main https://github.com/reliable-ly0411/plotjuggler-apbin-plugins.git
 ```
 
 ### 2a. Compile via Docker
@@ -42,9 +89,8 @@ This requires that you have Docker installed in your system.
     Build arguments include:
     - `ADD_UNITS[=OFF]`: Set to `ON` to enable the display of units in the logged fields. Read at the end for more information.
     - `ADD_RCOU_FUNCTION_LABELS[=OFF]`: Set to `ON` to enable the display the channel function next to its name.
-[=OFF]`: Set to `ON` to enable the display of units in the logged fields. Read at the end for more information.
     - `BASE_IMAGE[=ubuntu:22.04]`: Specify the OS image to build off of. It is known that using a different OS than your host OS may result in the plugin not working.
-    - `PJ_TAG[=3.9.2]`: The PlotJuggler git branch or tag to use when cloing and compiling PlotJuggler.
+    - `PJ_TAG[=3.9.2]`: The PlotJuggler git branch or tag to use when cloning and compiling PlotJuggler.
 
 Once compilation is finished, you will find your `.so` plugin in the `artifacts` folder you created previously.
 
@@ -120,7 +166,7 @@ If you have added a folder, you will need to restart PlotJuggler for the change 
 
 ### For prebuilt binaries
 
-You can find a pre-built plugin for Ubuntu and Windows in the [Github Releases](https://github.com/ArduPilot/plotjuggler-apbin-plugins/releases) page.
+You can find a pre-built plugin for Ubuntu and Windows in the [stable fork release](https://github.com/reliable-ly0411/plotjuggler-apbin-plugins/releases/tag/v1.2.0) page.
 Copy that binary to one of the PlotJuggler plugin folders.
 
 ### For Docker-built binaries

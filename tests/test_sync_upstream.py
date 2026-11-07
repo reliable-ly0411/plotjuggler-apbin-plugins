@@ -77,6 +77,10 @@ class SyncTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "product changes"):
             self.run_sync()
 
+    def test_sdk_minor_release_notes_are_explicitly_managed(self):
+        self.assertIn("docs/releases/v1.3.0-pj4.rc.1.md", sync.MANAGED)
+        self.assertNotIn("docs/releases/unreviewed.md", sync.MANAGED)
+
     def test_new_release_policy_collision_stops(self):
         commit(self.upstream, "RELEASING.md", "upstream policy\n")
         with self.assertRaisesRegex(RuntimeError, "maintenance paths"):

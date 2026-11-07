@@ -20,7 +20,7 @@ class ReleaseTest(unittest.TestCase):
         release.validate_config(ROOT)
 
     def test_semver_rejects_leading_zero_and_unordered_suffix(self):
-        for good in ['1.2.0', '1.2.0-pj4.rc.1']:
+        for good in ['1.2.0', '1.2.0-pj4.rc.1', '1.3.0-pj4.rc.1']:
             self.assertIsNotNone(release.SEMVER.fullmatch(good))
         for bad in ['01.2.0', '2.0.0-rc.01', '2.0', '2.0.0-rc1', 'v1.2.0', '1.2.0-pj4.rc.01', '1.2.0-pj4.rc1']:
             self.assertIsNone(release.SEMVER.fullmatch(bad))

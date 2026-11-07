@@ -10,7 +10,7 @@ import subprocess
 UPSTREAM = "https://github.com/ArduPilot/plotjuggler-apbin-plugins.git"
 FORK_URL = "https://github.com/reliable-ly0411/plotjuggler-apbin-plugins.git"
 RECORD = "docs/upstream-sync.json"
-MANAGED = frozenset({RECORD, "FORK.md", "scripts/sync_upstream.py",
+MANAGED = frozenset({RECORD, "README.md", "FORK.md", "scripts/sync_upstream.py",
                      "tests/test_sync_upstream.py", ".github/workflows/upstream-sync.yml",
                      "AGENTS.md", "RELEASING.md", "VERSION", "release.json",
                      "scripts/release.py", "tests/test_release.py",

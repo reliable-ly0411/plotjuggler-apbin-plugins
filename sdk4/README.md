@@ -73,7 +73,11 @@ Native shared loading is required; static/WASM embedding is refused.
 - FMT/FMTU, UNIT/MULT, sensor instances, numeric fields, legacy/current PARM,
   both MSG layouts, parameter/default labels and message timeline are retained.
 - TimeUS is stored as exact integer microseconds and checked before conversion
-  to SDK nanoseconds. A usable GPS sample aligns the entire log; unresolved
+  to SDK nanoseconds. Records with a leading uint32 `TimeMS` boot clock are
+  also supported, with exact millisecond-to-microsecond conversion; `TimeUS`
+  takes precedence if both exist. Non-leading GPS `TimeMS` and ACC/GYR
+  sensor-local clocks are not interpreted as boot time. Clock rollover and
+  old GPS `Week`/`T`-only epoch anchoring are not inferred. A usable GPS sample aligns the entire log; unresolved
   GPS weeks are ignored. The original 18-second GPS/UTC offset is retained and
   assumes logs from 2017 onward.
 - Truncated tails retain earlier complete samples with a visible warning.

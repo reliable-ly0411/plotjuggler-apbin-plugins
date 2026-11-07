@@ -299,6 +299,98 @@ void textAndParameters() {
           "parameter Default labels retained");
 }
 
+
+/// Legacy DataFlash records may use uint32 millisecond clocks instead of TimeUS.
+void millisecondTimestamps() {
+  auto bytes = fmt(140, "TST", "If", "TimeMS,Value");
+  auto row = packet(140);
+  append(row, std::uint32_t{1234});
+  append(row, 2.5f);
+  join(bytes, row);
+  row = packet(140);
+  append(row, std::numeric_limits<std::uint32_t>::max());
+  append(row, 3.5f);
+  join(bytes, row);
+  const auto result = parse(bytes);
+  const auto& values = series(result, "/TST/Value").samples;
+  require(values.size() == 2 && values[0].timestamp_us == 1234000 &&
+              values[1].timestamp_us == 4294967295000LL,
+          "TimeMS converts exactly to integral microseconds without 32-bit overflow");
+  require(result.messages_without_time == 0 && result.series.size() == 1,
+          "TimeMS is recognized as a clock, not an extra measurement");
+
+  bytes = fmt(140, "TST", "QIf", "TimeUS,TimeMS,Value");
+  row = packet(140);
+  append(row, std::uint64_t{1234567});
+  append(row, std::uint32_t{9999});
+  append(row, 1.5f);
+  join(bytes, row);
+  require(series(parse(bytes), "/TST/Value").samples[0].timestamp_us == 1234567,
+          "TimeUS takes precedence over a coexisting TimeMS field");
+
+  bytes = fmt(140, "TST", "If", "TimeMS,Value");
+  row = packet(140);
+  append(row, std::uint32_t{1500});
+  append(row, 2.5f);
+  join(bytes, row);
+  join(bytes, fmt(141, "GPS", "QIHB", "TimeUS,GMS,GWk,NSats"));
+  row = packet(141);
+  append(row, std::uint64_t{2000000});
+  append(row, std::uint32_t{345600000});
+  append(row, std::uint16_t{2000});
+  append(row, std::uint8_t{8});
+  join(bytes, row);
+  const auto gps = parse(bytes);
+  require(gps.gps_synchronized &&
+              series(gps, "/TST/Value").samples[0].timestamp_us == 1525910381500000LL,
+          "TimeMS records share the exact GPS alignment of TimeUS records");
+
+  bytes = fmt(140, "PARM", "INf", "TimeMS,Name,Value");
+  row = packet(140);
+  append(row, std::uint32_t{2500});
+  string(row, "TEST_MS", 16);
+  append(row, 7.5f);
+  join(bytes, row);
+  join(bytes, fmt(141, "MSG", "IZ", "TimeMS,Message"));
+  row = packet(141);
+  append(row, std::uint32_t{3500});
+  string(row, "legacy clock", 64);
+  join(bytes, row);
+  const auto text = parse(bytes);
+  require(series(text, "/1. Parameters/TEST_MS").samples[0].timestamp_us == 2500000,
+          "legacy parameter accepts TimeMS");
+  require(series(text, "/2. Message Timeline").samples[0].timestamp_us == 3500000,
+          "legacy message timeline accepts TimeMS");
+
+  bytes = fmt(140, "TST", "ff", "TimeMS,Value");
+  row = packet(140);
+  append(row, 1.25f);
+  append(row, 2.5f);
+  join(bytes, row);
+  rejects([&] { (void)parse(bytes); }, "malformed TimeMS wire type is not silently rounded");
+
+  for (const auto* name : {"ACC", "ACC2", "GYR", "GYR2"}) {
+    bytes = simple();
+    join(bytes, fmt(141, name, "If", "TimeMS,Value"));
+    row = packet(141);
+    append(row, std::uint32_t{1234});
+    append(row, 2.5f);
+    join(bytes, row);
+    const auto skipped = parse(bytes);
+    require(skipped.messages_without_time == 1 && skipped.series.size() == 1,
+            "sensor-local TimeMS is not mistaken for the common log clock");
+  }
+  bytes = simple();
+  join(bytes, fmt(141, "GPS", "BIH", "Status,TimeMS,Week"));
+  row = packet(141);
+  append(row, std::uint8_t{3});
+  append(row, std::uint32_t{1234});
+  append(row, std::uint16_t{2000});
+  join(bytes, row);
+  require(parse(bytes).messages_without_time == 1,
+          "non-leading GPS TimeMS is not mistaken for a boot-time clock");
+}
+
 /// Exercise every truncation boundary and deterministic damaged input under sanitizers.
 void damagedCorpus(const std::filesystem::path& directory) {
   const auto original = readFile(directory / "synthetic.BIN");
@@ -350,6 +442,7 @@ int main(int argc, char** argv) {
     malformed();
     valuesAndMetadata();
     textAndParameters();
+    millisecondTimestamps();
     damagedCorpus(argv[1]);
     realLog(argv[2]);
     std::cout << "PASS: " << checks << " DataFlash parser checks\n";

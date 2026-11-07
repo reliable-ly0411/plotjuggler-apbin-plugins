@@ -165,7 +165,7 @@ void load(PJ::DataSourceHandle& handle, const std::filesystem::path& file) {
 }
 
 void successfulImports(PJ::DataSourceLibrary& library, const std::filesystem::path& directory) {
-  for (const auto* filename : {"synthetic.BIN", "gps.BIN", "second.BIN"}) {
+  for (const auto* filename : {"synthetic.BIN", "gps.BIN", "second.BIN", "timems.BIN"}) {
     Host host;
     auto handle = library.createHandle();
     PJ::ServiceRegistryBuilder registry;
@@ -191,6 +191,12 @@ void successfulImports(PJ::DataSourceLibrary& library, const std::filesystem::pa
       const auto document = nlohmann::json::parse(host.metadata);
       require(document["gps_synchronized"] == true && !document["series_descriptions"].empty(),
               "upstream descriptions retained as dataset metadata");
+    } else if (std::string_view(filename) == "timems.BIN") {
+      const auto& values = host.samples.at("/TST/Value");
+      require(host.samples.size() == 1 && values.size() == 2 &&
+                  values[0].first == 1234000000 && values[0].second == 2.5 &&
+                  values[1].first == 4294967295000000LL && values[1].second == 3.5,
+              "TimeMS clock crosses the C ABI with exact nanosecond conversion");
     } else {
       require(host.samples.size() == 1 && host.samples.at("/TST/Value")[0].second == 2.5,
               "new plugin instance has no cross-file state");

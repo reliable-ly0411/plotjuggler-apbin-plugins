@@ -84,7 +84,7 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_sdk101_compatibility_is_manual_test_only(self):
         name='sdk101-compat.yml'
         self.assertIn('workflow_dispatch:',events(name))
-        for forbidden in ['push:', 'pull_request:', 'schedule:', 'workflow_call:']:
+        for forbidden in ['push:', 'pull_request:', 'schedule:']:
             self.assertNotIn(forbidden,events(name))
         text=workflow(name)
         for required in ['ffd749ab343c3211b5100f124f6c873667b82629',
@@ -93,5 +93,10 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn(required,text)
         for forbidden in ['package_sdk4.py', 'receipt.py', 'gh release', 'contents: write']:
             self.assertNotIn(forbidden,text)
+        dispatcher=workflow('sdk4.yml')
+        self.assertIn("if: github.event_name == 'workflow_dispatch' && inputs.sdk101_compat",dispatcher)
+        self.assertIn('if: ${{ !inputs.sdk101_compat }}',dispatcher)
+        self.assertIn('source_ref: 90afd65ca21c452d1c1ab87e19d4057f9dfe60e8',dispatcher)
+        self.assertIn('ref: ${{ inputs.source_ref || github.sha }}',text)
 
 if __name__=='__main__':unittest.main()

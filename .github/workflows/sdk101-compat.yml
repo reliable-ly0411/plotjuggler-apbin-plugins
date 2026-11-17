@@ -2,6 +2,12 @@ name: SDK 1.0.1 compatibility
 
 on:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_ref:
+        description: Exact compatibility source commit, independent of dispatcher revision
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -16,7 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.source_ref || github.sha }}
           persist-credentials: false
+      - name: Verify exact compatibility source
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source_ref || github.sha }}
+        run: |
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          echo "Tested source: $SOURCE_SHA"
       - uses: actions/checkout@v4
         with:
           repository: PlotJuggler/plotjuggler_sdk

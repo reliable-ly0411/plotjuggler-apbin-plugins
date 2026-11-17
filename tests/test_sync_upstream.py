@@ -83,6 +83,8 @@ class SyncTest(unittest.TestCase):
 
     def test_sdk_compatibility_workflow_is_an_exact_maintenance_path(self):
         self.assertIn(".github/workflows/sdk101-compat.yml", sync.MANAGED)
+        self.assertIn(".github/workflows/sdk101-packages.yml", sync.MANAGED)
+        self.assertIn("scripts/verify_published_sdk4.py", sync.MANAGED)
         self.assertNotIn(".github/workflows/unreviewed.yml", sync.MANAGED)
 
     def test_readme_is_an_exact_maintenance_path(self):

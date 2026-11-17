@@ -95,8 +95,21 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertNotIn(forbidden,text)
         dispatcher=workflow('sdk4.yml')
         self.assertIn("if: github.event_name == 'workflow_dispatch' && inputs.sdk101_compat",dispatcher)
-        self.assertIn('if: ${{ !inputs.sdk101_compat }}',dispatcher)
+        self.assertIn('if: ${{ !inputs.sdk101_compat && !inputs.sdk101_packages }}',dispatcher)
         self.assertIn('source_ref: 90afd65ca21c452d1c1ab87e19d4057f9dfe60e8',dispatcher)
         self.assertIn('ref: ${{ inputs.source_ref || github.sha }}',text)
+
+    def test_published_sdk_packages_are_separate_from_source_builds(self):
+        text=workflow('sdk101-packages.yml')
+        self.assertIn('workflow_call:',events('sdk101-packages.yml'))
+        for forbidden in ['push:', 'pull_request:', 'schedule:']:
+            self.assertNotIn(forbidden,events('sdk101-packages.yml'))
+        self.assertIn('if: github.event_name == \'workflow_dispatch\' && inputs.sdk101_packages && !inputs.sdk101_compat',workflow('sdk4.yml'))
+        for required in ['ffd749ab343c3211b5100f124f6c873667b82629',
+                         'verify_published_sdk4.py', 'sdk4/tests/published',
+                         'published_1.2.0-pj4.rc.1 published_1.3.0-pj4.rc.1', 'contents: read']:
+            self.assertIn(required,text)
+        for forbidden in ['package_sdk4.py', 'receipt.py', 'gh release', 'contents: write', 'ardupilot_source_plugin --']:
+            self.assertNotIn(forbidden,text)
 
 if __name__=='__main__':unittest.main()

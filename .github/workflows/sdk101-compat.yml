@@ -1,0 +1,76 @@
+name: SDK 1.0.1 compatibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: PlotJuggler/plotjuggler_sdk
+          ref: ffd749ab343c3211b5100f124f6c873667b82629
+          path: _sdk
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-12
+          echo 'CC=gcc-12' >> "$GITHUB_ENV"
+          echo 'CXX=g++-12' >> "$GITHUB_ENV"
+      - name: Check exact SDK and manifest floor
+        shell: bash
+        run: |
+          test "$(git -C _sdk rev-parse HEAD)" = ffd749ab343c3211b5100f124f6c873667b82629
+          test "$(cat _sdk/VERSION)" = 1.0.1
+          python _sdk/tools/feature_floors/feature_floor_check.py --table _sdk/pj_base/feature_floors.json --manifest sdk4/manifest.json --sources sdk4/src
+          python tests/test_release.py -v
+          python tests/test_sync_upstream.py -v
+          python -m unittest discover -s .github/release_policy -p 'test_*.py' -v
+      - name: Install build tools and dependencies
+        shell: bash
+        run: |
+          python -m pip install 'conan>=2,<3' cmake ninja
+          conan profile detect --force
+          conan install _sdk -of build/deps -s build_type=Release -s compiler.cppstd=20 -c tools.cmake.cmaketoolchain:generator=Ninja -o with_tests=False --build=missing
+      - name: Compile and load the real shared plugin
+        shell: bash
+        run: |
+          cmake -S sdk4 -B build/compat -G Ninja -DCMAKE_BUILD_TYPE=Release -DAPBIN_BUILD_PLUGIN=ON -DAPBIN_BUILD_TESTS=ON -DAPBIN_SDK_SOURCE_DIR="$PWD/_sdk" -DCMAKE_TOOLCHAIN_FILE="$PWD/build/deps/conan_toolchain.cmake" -DPJ_WARNINGS_AS_ERRORS=ON -DPJ_BUILD_EXPERIMENTAL=OFF
+          cmake --build build/compat --target ardupilot_parser_test ardupilot_source_test --parallel 2
+          ctest --test-dir build/compat --output-on-failure -V
+      - name: Instrument parser, plugin and SDK with ASan and UBSan
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          cmake -S sdk4 -B build/sanitized -G Ninja -DCMAKE_BUILD_TYPE=Release -DAPBIN_BUILD_PLUGIN=ON -DAPBIN_BUILD_TESTS=ON -DAPBIN_SDK_SOURCE_DIR="$PWD/_sdk" -DCMAKE_TOOLCHAIN_FILE="$PWD/build/deps/conan_toolchain.cmake" -DPJ_WARNINGS_AS_ERRORS=ON -DPJ_BUILD_EXPERIMENTAL=OFF -DCMAKE_CXX_FLAGS='-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer' -DCMAKE_CXX_FLAGS_RELEASE=-DNDEBUG -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined
+          cmake --build build/sanitized --target ardupilot_parser_test ardupilot_source_test --parallel 2
+          ctest --test-dir build/sanitized --output-on-failure -V
+      - name: Keep test evidence only
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk101-compat-${{ matrix.os }}
+          path: |
+            build/compat/Testing/Temporary/LastTest.log
+            build/sanitized/Testing/Temporary/LastTest.log
+          if-no-files-found: warn

@@ -54,6 +54,10 @@ ctest --test-dir build/parser --output-on-failure
 
 ## Shared SDK plugin
 
+For the separate, source-only SDK 1.0.1 compatibility candidate, see
+[the exact dependency lock, reproduction steps and test scope](docs/SDK_1_0_1_COMPATIBILITY.md).
+The published packages and default installed-package lookup below remain 0.34.1.
+
 With the exact `plotjuggler_sdk/0.34.1` Conan package (or installed CMake
 package), nlohmann_json 3.12.0, Python 3 and a C++20 compiler available:
 

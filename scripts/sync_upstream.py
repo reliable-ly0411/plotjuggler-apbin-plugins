@@ -17,7 +17,8 @@ MANAGED = frozenset({RECORD, "README.md", "FORK.md", "scripts/sync_upstream.py",
                      ".github/workflows/release.yml", ".github/workflows/release-checks.yml",
                      "docs/releases/upstream-v1.1.0.md", "docs/releases/v1.2.0.md",
                      "docs/releases/v1.2.0-pj4.rc.1.md",
-                     "docs/releases/v1.3.0-pj4.rc.1.md"})
+                     "docs/releases/v1.3.0-pj4.rc.1.md",
+                     ".github/workflows/sdk101-compat.yml"})
 MANAGED = MANAGED | frozenset(['.github/release_policy/test_workflow_policy.py', '.github/release_policy/config.json', '.github/release_policy/evidence.py', '.github/release_policy/policy.py', '.github/release_policy/receipt.py', '.github/release_policy/test_evidence.py', '.github/release_policy/test_policy.py', '.github/release_policy/test_receipt.py', '.github/workflows/build.yml', '.github/workflows/release-build.yml', '.github/workflows/sdk4.yml', '.github/workflows/sync-upstream.yml', '.github/workflows/verify-release-candidate.yml'])
 
 

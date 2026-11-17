@@ -109,6 +109,17 @@ class ReleaseTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'same valid release version'):
                 release.validate_config(root)
 
+    def test_sdk_compatibility_build_cannot_be_packaged_as_old_sdk(self):
+        spec = importlib.util.spec_from_file_location('package_sdk4', ROOT / 'scripts/package_sdk4.py')
+        pack = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pack)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / 'apbin-sdk-source-version.txt').write_text('1.0.1\n')
+            with self.assertRaisesRegex(ValueError, 'Compatibility-only SDK build'):
+                pack.package(root, 'linux-ubuntu22.04', root / 'dist', root / 'verify')
+            self.assertFalse((root / 'dist').exists())
+
 
 if __name__ == '__main__':
     unittest.main()

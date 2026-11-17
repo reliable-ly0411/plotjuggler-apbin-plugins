@@ -263,6 +263,27 @@ void errorAndStop(PJ::DataSourceLibrary& library, const std::filesystem::path& d
   }
 }
 
+void simultaneousInstances(PJ::DataSourceLibrary& library, const std::filesystem::path& directory) {
+  Host first_host;
+  Host second_host;
+  auto first = library.createHandle();
+  auto second = library.createHandle();
+  PJ::ServiceRegistryBuilder first_registry;
+  PJ::ServiceRegistryBuilder second_registry;
+  bind(first, first_host, first_registry);
+  bind(second, second_host, second_registry);
+  load(first, directory / "synthetic.BIN");
+  load(second, directory / "second.BIN");
+  require(static_cast<bool>(second.start()), "second live instance imports independently");
+  require(first_host.samples.empty(), "second instance does not write to the first host");
+  require(static_cast<bool>(first.start()), "first live instance keeps its configuration");
+  require(first_host.samples.contains("/TST/#200/Value\t[V]"), "first live instance retains its fields");
+  require(second_host.samples.size() == 1 && second_host.samples.at("/TST/Value").size() == 1,
+          "first instance does not change second instance data");
+  require(first_host.finishes == 1 && second_host.finishes == 1,
+          "live instances have independent progress lifetimes");
+}
+
 void unicodePath(PJ::DataSourceLibrary& library, const std::filesystem::path& directory) {
   const auto temporary = std::filesystem::temp_directory_path() /
                          ("ardupilot-sdk4-test-" +
@@ -344,6 +365,7 @@ int main(int argc, char** argv) {
     require(nlohmann::json::parse(handle.manifest())["version"] == "1.3.0-pj4.rc.1", "prerelease adapter identity");
     require(nlohmann::json::parse(handle.manifest())["license"] == "LGPL-3.0-only", "embedded upstream LGPLv3 scope");
     successfulImports(library, argv[2]);
+    simultaneousInstances(library, argv[2]);
     errorAndStop(library, argv[2]);
     unicodePath(library, argv[2]);
     realLog(library, argv[3]);

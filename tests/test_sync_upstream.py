@@ -81,6 +81,10 @@ class SyncTest(unittest.TestCase):
         self.assertIn("docs/releases/v1.3.0-pj4.rc.1.md", sync.MANAGED)
         self.assertNotIn("docs/releases/unreviewed.md", sync.MANAGED)
 
+    def test_sdk_compatibility_workflow_is_an_exact_maintenance_path(self):
+        self.assertIn(".github/workflows/sdk101-compat.yml", sync.MANAGED)
+        self.assertNotIn(".github/workflows/unreviewed.yml", sync.MANAGED)
+
     def test_readme_is_an_exact_maintenance_path(self):
         self.assertIn("README.md", sync.MANAGED)
         commit(self.fork, "README.md", "fork installation guide\n")

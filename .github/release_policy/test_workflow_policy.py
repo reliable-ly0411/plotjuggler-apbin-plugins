@@ -81,4 +81,17 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn(record['status'],['baseline','prerelease'])
             self.assertRegex(record['upstream_sha'],r'^[0-9a-f]{40}$')
 
+    def test_sdk101_compatibility_is_manual_test_only(self):
+        name='sdk101-compat.yml'
+        self.assertIn('workflow_dispatch:',events(name))
+        for forbidden in ['push:', 'pull_request:', 'schedule:', 'workflow_call:']:
+            self.assertNotIn(forbidden,events(name))
+        text=workflow(name)
+        for required in ['ffd749ab343c3211b5100f124f6c873667b82629',
+                         'feature_floor_check.py', 'ardupilot_source_test',
+                         '-fsanitize=address,undefined', 'contents: read']:
+            self.assertIn(required,text)
+        for forbidden in ['package_sdk4.py', 'receipt.py', 'gh release', 'contents: write']:
+            self.assertNotIn(forbidden,text)
+
 if __name__=='__main__':unittest.main()

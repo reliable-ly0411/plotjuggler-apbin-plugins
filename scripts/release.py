@@ -54,7 +54,7 @@ def validate_config(root):
             raise ValueError("SDK manifest must retain the reviewed upstream LGPLv3 scope")
         if manifest["version"] != version:
             raise ValueError("SDK embedded manifest and release versions differ")
-        if manifest["min_sdk_required"] != "0.34.1" or manifest["suggested_sdk_version"] != "0.34.1":
+        if manifest["min_sdk_required"] != "0.34.1" or manifest.get("suggested_sdk_version") not in (None, "0.34.1"):
             raise ValueError("SDK ABI is not the reviewed 0.34.1 release boundary")
         if config["workflow"] != ".github/workflows/sdk4.yml":
             raise ValueError("SDK4 must use its native SDK workflow")

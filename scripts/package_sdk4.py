@@ -18,6 +18,9 @@ def validate_built_manifest(source, built):
 
 
 def package(build, platform, out, verify_dir):
+    sdk_stamp = build / 'apbin-sdk-source-version.txt'
+    if sdk_stamp.exists() and sdk_stamp.read_text().strip() != '0.34.1':
+        raise ValueError('Compatibility-only SDK build: the release packager requires SDK 0.34.1')
     version = (ROOT / 'VERSION').read_text().strip()
     manifest = json.loads((ROOT / 'sdk4/manifest.json').read_text())
     if manifest.get('license') != 'LGPL-3.0-only':

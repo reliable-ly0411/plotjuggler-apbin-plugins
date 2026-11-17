@@ -11,7 +11,7 @@ endif()
 
 option(APBIN_BUILD_PLUGIN "Build the separate PlotJuggler 4 SDK shared plugin" ${_apbin_plugin_default})
 option(APBIN_BUILD_TESTS "Build DataFlash parser and ABI regressions" ON)
-set(APBIN_SDK_SOURCE_DIR "" CACHE PATH "Optional exact v0.34.1 SDK checkout for development builds")
+set(APBIN_SDK_SOURCE_DIR "" CACHE PATH "Optional SDK 0.34.1 or 1.0.1 checkout for development builds")
 set(APBIN_PLUGIN_OUTPUT_DIRECTORY "" CACHE PATH "Optional plugin staging directory")
 include(GNUInstallDirs)
 set(APBIN_PLUGIN_INSTALL_DIRECTORY "${CMAKE_INSTALL_LIBDIR}" CACHE STRING
@@ -48,9 +48,13 @@ if(APBIN_BUILD_PLUGIN)
     if(APBIN_SDK_SOURCE_DIR)
       file(READ "${APBIN_SDK_SOURCE_DIR}/VERSION" _apbin_sdk_version)
       string(STRIP "${_apbin_sdk_version}" _apbin_sdk_version)
-      if(NOT _apbin_sdk_version STREQUAL "0.34.1")
-        message(FATAL_ERROR "APBIN_SDK_SOURCE_DIR must point to SDK v0.34.1")
+      if(NOT _apbin_sdk_version STREQUAL "0.34.1" AND
+         NOT _apbin_sdk_version STREQUAL "1.0.1")
+        message(FATAL_ERROR "APBIN_SDK_SOURCE_DIR must point to SDK 0.34.1 or 1.0.1")
       endif()
+      # The release packager still describes SDK 0.34.1. Prevent an explicitly
+      # selected compatibility build from being mislabeled as that release.
+      file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/apbin-sdk-source-version.txt" "${_apbin_sdk_version}\n")
       set(PJ_BUILD_TESTS OFF CACHE BOOL "Build SDK tests" FORCE)
       set(PJ_BUILD_PORTED_PLUGINS OFF CACHE BOOL "Build SDK ported plugins" FORCE)
       add_subdirectory("${APBIN_SDK_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/sdk")

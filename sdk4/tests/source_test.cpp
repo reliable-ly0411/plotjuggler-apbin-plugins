@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // ABI fixture pattern follows plotjuggler_sdk's Apache-2.0 file_source_integration_test.cpp.
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -264,9 +265,10 @@ void errorAndStop(PJ::DataSourceLibrary& library, const std::filesystem::path& d
 }
 
 void unicodePath(PJ::DataSourceLibrary& library, const std::filesystem::path& directory) {
+  const auto suffix = static_cast<long long>(
+      std::chrono::steady_clock::now().time_since_epoch().count());
   const auto temporary = std::filesystem::temp_directory_path() /
-                         ("ardupilot-sdk4-test-" +
-                          std::to_string(std::filesystem::file_time_type::clock::now().time_since_epoch().count()));
+                         ("ardupilot-sdk4-test-" + std::to_string(suffix));
   std::filesystem::create_directory(temporary);
   struct Cleanup {
     std::filesystem::path directory;
